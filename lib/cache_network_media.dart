@@ -1,5 +1,5 @@
-// export 'cache_network_image.dart';
-// export 'cache_network_media_platform_interface.dart';
-// export 'cache_network_media_method_channel.dart';
-// export 'disk_cache_manager.dart';
+/// Cache Network Media - A Flutter plugin for caching network media
+library cache_network_media;
+
+// Export main widget (public API)
 export 'src/widgets/cache_network_media_widget.dart';

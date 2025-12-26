@@ -1,75 +1,169 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import '../providers/base_media_provider.dart';
+import '../providers/image_media_provider.dart';
+import '../providers/svg_media_provider.dart';
 
-import 'package:cache_network_media/src/core/cache_network_image.dart';
-import 'package:flutter/widgets.dart';
 
 class CacheNetworkMediaWidget extends StatelessWidget {
-  final String imageUrl;
-  final Directory? cacheDirectory;
-  final ImageFrameBuilder? frameBuilder;
-  final ImageLoadingBuilder? loadingBuilder;
-  final ImageErrorWidgetBuilder? errorBuilder;
-  final String? semanticLabel;
-  final bool excludeFromSemantics;
+  final String url;
+  final BaseMediaProvider _provider;
+  
+  // Common properties
   final double? width;
   final double? height;
-  final Color? color;
-  final Animation<double>? opacity;
-  final BlendMode? colorBlendMode;
   final BoxFit? fit;
   final AlignmentGeometry alignment;
-  final ImageRepeat repeat;
-  final Rect? centerSlice;
-  final bool matchTextDirection;
-  final bool gaplessPlayback;
-  final bool isAntiAlias;
-  final FilterQuality filterQuality;
-  const CacheNetworkMediaWidget({
+  final Widget? placeholder;
+  final Widget Function(BuildContext, Object, StackTrace?)? errorBuilder;
+  
+  // Type-specific properties stored as Map
+  final Map<String, dynamic> _extraParams;
+
+  const CacheNetworkMediaWidget._({
     super.key,
-    required this.imageUrl,
-    this.cacheDirectory,
-    this.frameBuilder,
-    this.loadingBuilder,
-    this.errorBuilder,
-    this.semanticLabel,
-    this.excludeFromSemantics = false,
+    required this.url,
+    required BaseMediaProvider provider,
     this.width,
     this.height,
-    this.color,
-    this.opacity,
-    this.colorBlendMode,
     this.fit,
     this.alignment = Alignment.center,
-    this.repeat = ImageRepeat.noRepeat,
-    this.centerSlice,
-    this.matchTextDirection = false,
-    this.gaplessPlayback = false,
-    this.isAntiAlias = false,
-    this.filterQuality = FilterQuality.medium,
-  });
+    this.placeholder,
+    this.errorBuilder,
+    Map<String, dynamic>? extraParams,
+  }) : _provider = provider,
+       _extraParams = extraParams ?? const {};
+  
 
+  CacheNetworkMediaWidget.img({
+    Key? key,
+    required String url,
+    Directory? cacheDirectory,
+    double? width,
+    double? height,
+    BoxFit? fit,
+    AlignmentGeometry alignment = Alignment.center,
+    Widget? placeholder,
+    Widget Function(BuildContext, Object, StackTrace?)? errorBuilder,
+    ImageFrameBuilder? frameBuilder,
+    ImageLoadingBuilder? loadingBuilder,
+    ImageErrorWidgetBuilder? imageErrorBuilder,
+    String? semanticLabel,
+    bool excludeFromSemantics = false,
+    Color? color,
+    Animation<double>? opacity,
+    BlendMode? colorBlendMode,
+    ImageRepeat repeat = ImageRepeat.noRepeat,
+    Rect? centerSlice,
+    bool matchTextDirection = false,
+    bool gaplessPlayback = false,
+    bool isAntiAlias = false,
+    FilterQuality filterQuality = FilterQuality.medium,
+  }) : this._(
+    key: key,
+    url: url,
+    provider: ImageMediaProvider(url: url, cacheDirectory: cacheDirectory),
+    width: width,
+    height: height,
+    fit: fit,
+    alignment: alignment,
+    placeholder: placeholder,
+    errorBuilder: errorBuilder,
+    extraParams: {
+      'frameBuilder': frameBuilder,
+      'loadingBuilder': loadingBuilder,
+      'errorBuilder': imageErrorBuilder,
+      'semanticLabel': semanticLabel,
+      'excludeFromSemantics': excludeFromSemantics,
+      'color': color,
+      'opacity': opacity,
+      'colorBlendMode': colorBlendMode,
+      'repeat': repeat,
+      'centerSlice': centerSlice,
+      'matchTextDirection': matchTextDirection,
+      'gaplessPlayback': gaplessPlayback,
+      'isAntiAlias': isAntiAlias,
+      'filterQuality': filterQuality,
+    },
+  );
+  
+
+  CacheNetworkMediaWidget.svg({
+    Key? key,
+    required String url,
+    Directory? cacheDirectory,
+    double? width,
+    double? height,
+    BoxFit? fit,
+    AlignmentGeometry alignment = Alignment.center,
+    Widget? placeholder,
+    Widget Function(BuildContext, Object, StackTrace?)? errorBuilder,
+    ColorFilter? colorFilter,
+    Color? color,
+    SvgTheme? theme,
+    String? semanticsLabel,
+    bool excludeFromSemantics = false,
+    Clip clipBehavior = Clip.hardEdge,
+    bool allowDrawingOutsideViewBox = false,
+    bool matchTextDirection = false,
+  }) : this._(
+    key: key,
+    url: url,
+    provider: SvgMediaProvider(url: url, cacheDirectory: cacheDirectory),
+    width: width,
+    height: height,
+    fit: fit,
+    alignment: alignment,
+    placeholder: placeholder,
+    errorBuilder: errorBuilder,
+    extraParams: {
+      'colorFilter': colorFilter ?? (color != null 
+        ? ColorFilter.mode(color, BlendMode.srcIn) 
+        : null),
+      'theme': theme,
+      'semanticsLabel': semanticsLabel,
+      'excludeFromSemantics': excludeFromSemantics,
+      'clipBehavior': clipBehavior,
+      'allowDrawingOutsideViewBox': allowDrawingOutsideViewBox,
+      'matchTextDirection': matchTextDirection,
+    },
+  );
+  
   @override
   Widget build(BuildContext context) {
-    return Image(
-      image: CacheNetworkImage(url: imageUrl, cacheDirectory: cacheDirectory),
-      width: width,
-      height: height,
-      frameBuilder: frameBuilder,
-      loadingBuilder: loadingBuilder,
-      errorBuilder: errorBuilder,
-      semanticLabel: semanticLabel,
-      excludeFromSemantics: excludeFromSemantics,
-      color: color,
-      opacity: opacity,
-      colorBlendMode: colorBlendMode,
-      fit: fit,
-      alignment: alignment,
-      repeat: repeat,
-      centerSlice: centerSlice,
-      matchTextDirection: matchTextDirection,
-      gaplessPlayback: gaplessPlayback,
-      isAntiAlias: isAntiAlias,
-      filterQuality: filterQuality,
+    return FutureBuilder<Uint8List>(
+      future: _provider.fetchMedia(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return errorBuilder?.call(
+            context,
+            snapshot.error!,
+            snapshot.stackTrace,
+          ) ?? const Icon(Icons.error_outline, color: Colors.red);
+        }
+        
+        if (!snapshot.hasData) {
+          return placeholder ?? 
+            SizedBox(
+              width: width,
+              height: height,
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+        }
+        
+        return _provider.buildWidget(
+          data: snapshot.data!,
+          width: width,
+          height: height,
+          fit: fit,
+          alignment: alignment,
+          extraParams: _extraParams,
+        );
+      },
     );
   }
 }
