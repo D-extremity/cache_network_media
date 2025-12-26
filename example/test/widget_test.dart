@@ -1,27 +1,32 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:cache_network_media_example/main.dart';
+import 'package:cache_network_media/cache_network_media.dart';
 
 void main() {
-  testWidgets('Verify Platform version', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  testWidgets('App builds successfully', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
+    expect(find.text('Cache Network Media'), findsOneWidget);
+  });
 
-    // Verify that platform version is retrieved.
-    expect(
-      find.byWidgetPredicate(
-        (Widget widget) =>
-            widget is Text && widget.data!.startsWith('Running on:'),
-      ),
-      findsOneWidget,
-    );
+  testWidgets('Image widget is present', (WidgetTester tester) async {
+    await tester.pumpWidget(const MyApp());
+    expect(find.text('Image Example'), findsOneWidget);
+    expect(find.byType(CacheNetworkMediaWidget), findsWidgets);
+  });
+
+  testWidgets('SVG widgets are present', (WidgetTester tester) async {
+    await tester.pumpWidget(const MyApp());
+    expect(find.text('SVG Example'), findsOneWidget);
+  });
+
+  testWidgets('Lottie widget is present', (WidgetTester tester) async {
+    await tester.pumpWidget(const MyApp());
+    expect(find.text('Lottie Animation'), findsOneWidget);
+  });
+
+  testWidgets('All sections are scrollable', (WidgetTester tester) async {
+    await tester.pumpWidget(const MyApp());
+    expect(find.byType(SingleChildScrollView), findsOneWidget);
   });
 }
