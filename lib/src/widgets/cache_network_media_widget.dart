@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:cache_network_media/cache_network_image.dart';
+import 'package:cache_network_media/src/core/cache_network_image.dart';
 import 'package:flutter/widgets.dart';
 
 class CacheNetworkMediaWidget extends StatelessWidget {

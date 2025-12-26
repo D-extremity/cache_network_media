@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cache_network_media/cache_network_media_method_channel.dart';
+import 'package:cache_network_media/src/platform/cache_network_media_method_channel.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

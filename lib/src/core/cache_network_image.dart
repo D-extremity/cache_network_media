@@ -2,8 +2,8 @@ import 'dart:developer';
 import 'dart:io';
 import 'dart:ui';
 
-import 'package:cache_network_media/cache_network_media_method_channel.dart';
-import 'package:cache_network_media/disk_cache_manager.dart';
+import 'package:cache_network_media/src/platform/cache_network_media_method_channel.dart';
+import 'package:cache_network_media/src/core/disk_cache_manager.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 

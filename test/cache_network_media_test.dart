@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cache_network_media/cache_network_media.dart';
-import 'package:cache_network_media/cache_network_media_platform_interface.dart';
-import 'package:cache_network_media/cache_network_media_method_channel.dart';
+import 'package:cache_network_media/src/platform/cache_network_media_platform_interface.dart';
+import 'package:cache_network_media/src/platform/cache_network_media_method_channel.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 class MockCacheNetworkMediaPlatform
