@@ -14,8 +14,6 @@ abstract class BaseMediaProvider {
 
   Future<Uint8List> fetchMedia() async {
     _cacheManager ??= await _initCacheManager();
-
-    // Try cache first
     Uint8List? cachedData = await _cacheManager?.getImage(url);
     if (cachedData != null) {
       debugPrint('Cache HIT for: $url');
@@ -24,10 +22,7 @@ abstract class BaseMediaProvider {
 
     debugPrint('Cache MISS for: $url - Downloading...');
 
-    // Fetch from network
     final data = await downloadFromNetwork();
-
-    // Save to cache
     await _cacheManager?.putImage(url, data);
 
     return data;
