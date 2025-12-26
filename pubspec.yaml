@@ -47,6 +47,8 @@ flutter:
       android:
         package: com.theextremity.cache_network_media
         pluginClass: CacheNetworkMediaPlugin
+      ios:
+        pluginClass: CacheNetworkMediaPlugin
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:
