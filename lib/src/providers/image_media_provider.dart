@@ -2,32 +2,28 @@ import 'dart:typed_data';
 import 'package:flutter/widgets.dart';
 import 'base_media_provider.dart';
 
-/**
- * Provider for standard image formats (PNG, JPG, WebP, etc.).
- * 
- * Handles caching and rendering of raster images using Flutter's
- * [Image.memory] widget. Supports all standard image properties
- * including color blending, filtering, and accessibility.
- * 
- * Supported formats: PNG, JPG, JPEG, WebP, GIF, BMP, WBMP
- * 
- * @author @D-extremity
- * @see [BaseMediaProvider] for caching implementation
- */
+/// Provider for standard image formats (PNG, JPG, WebP, etc.).
+///
+/// Handles caching and rendering of raster images using Flutter's
+/// [Image.memory] widget. Supports all standard image properties
+/// including color blending, filtering, and accessibility.
+///
+/// Supported formats: PNG, JPG, JPEG, WebP, GIF, BMP, WBMP
+///
+/// @author @D-extremity
+/// @see [BaseMediaProvider] for caching implementation
 class ImageMediaProvider extends BaseMediaProvider {
   ImageMediaProvider({required super.url, super.cacheDirectory});
 
-  /**
-   * Builds an [Image.memory] widget from cached image data.
-   * 
-   * @param data The image bytes to display
-   * @param width Optional width for the image
-   * @param height Optional height for the image
-   * @param fit How to inscribe the image into the allocated space
-   * @param alignment How to align the image within its bounds
-   * @param extraParams Map containing image-specific properties from [CacheNetworkMediaWidget.img]
-   * @return A configured [Image] widget
-   */
+  /// Builds an [Image.memory] widget from cached image data.
+  ///
+  /// @param data The image bytes to display
+  /// @param width Optional width for the image
+  /// @param height Optional height for the image
+  /// @param fit How to inscribe the image into the allocated space
+  /// @param alignment How to align the image within its bounds
+  /// @param extraParams Map containing image-specific properties from [CacheNetworkMediaWidget.img]
+  /// @return A configured [Image] widget
   @override
   Widget buildWidget({
     required Uint8List data,
