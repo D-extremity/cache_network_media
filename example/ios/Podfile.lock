@@ -1,5 +1,5 @@
 PODS:
-  - cache_network_media (0.0.1):
+  - cache_network_media (0.0.2):
     - Flutter
   - Flutter (1.0.0)
   - integration_test (0.0.1):
@@ -19,7 +19,7 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/integration_test/ios"
 
 SPEC CHECKSUMS:
-  cache_network_media: ff9bddc781d1f680ad5d17bee44a086b4b1145d7
+  cache_network_media: 2bebb0fc5003eade97a656d9d2b1ca9196cf3531
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
 
