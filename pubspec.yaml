@@ -1,5 +1,5 @@
 name: cache_network_media
-description: Efficient network media caching for Flutter. Cache and display images, SVG graphics, and Lottie animations with automatic disk caching, offline support, and customizable placeholders.
+description: Cache and display network images, SVGs, and Lottie animations with disk caching and offline support.
 version: 0.0.2
 homepage: https://github.com/D-extremity/cache_network_media
 repository: https://github.com/D-extremity/cache_network_media

@@ -13,7 +13,8 @@ A Flutter plugin for caching network images, SVG graphics, and Lottie animations
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'D-extremity' => 'https://github.com/D-extremity' }
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*'
+  s.source_files = 'cache_network_media/Sources/cache_network_media/**/*'
+  s.resource_bundles = {'cache_network_media_privacy' => ['cache_network_media/Sources/cache_network_media/PrivacyInfo.xcprivacy']}
   s.dependency 'Flutter'
   s.platform = :ios, '12.0'
 
