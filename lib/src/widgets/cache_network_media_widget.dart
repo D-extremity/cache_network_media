@@ -9,16 +9,16 @@ import '../providers/svg_media_provider.dart';
 import '../providers/lottie_media_provider.dart';
 
 /// A widget that loads and caches network media including images, SVG, and Lottie animations.
-/// 
+///
 /// This widget provides efficient caching for various media types fetched from network URLs.
 /// It automatically handles downloading, caching, and displaying media with support for
 /// placeholders and error handling.
-/// 
+///
 /// Supported media types:
 /// - Images (PNG, JPG, WebP, etc.) via [CacheNetworkMediaWidget.img]
 /// - SVG vector graphics via [CacheNetworkMediaWidget.svg]
 /// - Lottie animations via [CacheNetworkMediaWidget.lottie]
-/// 
+///
 /// Example:
 /// ```dart
 /// CacheNetworkMediaWidget.img(
@@ -28,7 +28,7 @@ import '../providers/lottie_media_provider.dart';
 ///   placeholder: CircularProgressIndicator(),
 /// )
 /// ```
-/// 
+///
 /// @author @D-extremity
 /// @see [ImageMediaProvider] for image caching implementation
 /// @see [SvgMediaProvider] for SVG caching implementation
@@ -76,6 +76,11 @@ class CacheNetworkMediaWidget extends StatelessWidget {
   /// If null, displays a red error icon
   final Widget Function(BuildContext, Object, StackTrace?)? errorBuilder;
 
+  /// Callback triggered when the widget is tapped
+  ///
+  /// If null, the widget will not respond to taps
+  final VoidCallback? onTap;
+
   /// Type-specific properties stored as Map
   final Map<String, dynamic> _extraParams;
 
@@ -90,16 +95,17 @@ class CacheNetworkMediaWidget extends StatelessWidget {
     this.alignment = Alignment.center,
     this.placeholder,
     this.errorBuilder,
+    this.onTap,
     Map<String, dynamic>? extraParams,
   }) : _provider = provider,
        _isLottie = isLottie,
        _extraParams = extraParams ?? const {};
 
   /// Creates a cached network image widget for standard image formats.
-  /// 
+  ///
   /// Supports PNG, JPG, JPEG, WebP, and other standard image formats.
   /// Downloaded images are cached locally for faster subsequent loads.
-  /// 
+  ///
   /// Example:
   /// ```dart
   /// CacheNetworkMediaWidget.img(
@@ -112,7 +118,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
   ///   colorBlendMode: BlendMode.multiply,
   /// )
   /// ```
-  /// 
+  ///
   /// @param url The network URL of the image (required)
   /// @param cacheDirectory Custom directory for caching. If null, uses platform default
   /// @param width The width of the image widget
@@ -135,7 +141,8 @@ class CacheNetworkMediaWidget extends StatelessWidget {
   /// @param gaplessPlayback Whether to continue showing the old image while loading new one
   /// @param isAntiAlias Whether to paint the image with anti-aliasing
   /// @param filterQuality The quality of image sampling
-  /// 
+  /// @param onTap Callback triggered when the image is tapped
+  ///
   /// @author @D-extremity
   CacheNetworkMediaWidget.img({
     Key? key,
@@ -147,6 +154,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
     AlignmentGeometry alignment = Alignment.center,
     Widget? placeholder,
     Widget Function(BuildContext, Object, StackTrace?)? errorBuilder,
+    VoidCallback? onTap,
     ImageFrameBuilder? frameBuilder,
     ImageLoadingBuilder? loadingBuilder,
     ImageErrorWidgetBuilder? imageErrorBuilder,
@@ -171,6 +179,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
          alignment: alignment,
          placeholder: placeholder,
          errorBuilder: errorBuilder,
+         onTap: onTap,
          extraParams: {
            'frameBuilder': frameBuilder,
            'loadingBuilder': loadingBuilder,
@@ -190,11 +199,11 @@ class CacheNetworkMediaWidget extends StatelessWidget {
        );
 
   /// Creates a cached SVG vector graphics widget.
-  /// 
+  ///
   /// Supports SVG files with full vector rendering capabilities.
   /// Downloaded SVG files are cached locally for faster subsequent loads.
   /// SVG content can be tinted and themed.
-  /// 
+  ///
   /// Example:
   /// ```dart
   /// CacheNetworkMediaWidget.svg(
@@ -205,7 +214,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
   ///   fit: BoxFit.contain,
   /// )
   /// ```
-  /// 
+  ///
   /// @param url The network URL of the SVG file (required)
   /// @param cacheDirectory Custom directory for caching. If null, uses platform default
   /// @param width The width of the SVG widget
@@ -222,7 +231,8 @@ class CacheNetworkMediaWidget extends StatelessWidget {
   /// @param clipBehavior How to clip the SVG content
   /// @param allowDrawingOutsideViewBox Whether to allow drawing outside the viewBox
   /// @param matchTextDirection Whether to flip the SVG in RTL text direction
-  /// 
+  /// @param onTap Callback triggered when the SVG is tapped
+  ///
   /// @author @D-extremity
   CacheNetworkMediaWidget.svg({
     Key? key,
@@ -234,6 +244,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
     AlignmentGeometry alignment = Alignment.center,
     Widget? placeholder,
     Widget Function(BuildContext, Object, StackTrace?)? errorBuilder,
+    VoidCallback? onTap,
     ColorFilter? colorFilter,
     Color? color,
     SvgTheme? theme,
@@ -252,6 +263,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
          alignment: alignment,
          placeholder: placeholder,
          errorBuilder: errorBuilder,
+         onTap: onTap,
          extraParams: {
            'colorFilter':
                colorFilter ??
@@ -268,11 +280,11 @@ class CacheNetworkMediaWidget extends StatelessWidget {
        );
 
   /// Creates a cached Lottie animation widget.
-  /// 
+  ///
   /// Supports Lottie JSON animations with full animation control.
   /// Downloaded Lottie files are cached as JSON for better performance and debugging.
   /// Uses file-based caching for optimal Lottie rendering.
-  /// 
+  ///
   /// Example:
   /// ```dart
   /// CacheNetworkMediaWidget.lottie(
@@ -284,7 +296,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
   ///   frameRate: 60.0,
   /// )
   /// ```
-  /// 
+  ///
   /// @param url The network URL of the Lottie JSON file (required)
   /// @param cacheDirectory Custom directory for caching. If null, uses platform default
   /// @param width The width of the Lottie widget
@@ -301,7 +313,8 @@ class CacheNetworkMediaWidget extends StatelessWidget {
   /// @param options Additional Lottie options
   /// @param addRepaintBoundary Whether to add a repaint boundary for performance
   /// @param renderCache Cache strategy for rendering
-  /// 
+  /// @param onTap Callback triggered when the animation is tapped
+  ///
   /// @author @D-extremity
   CacheNetworkMediaWidget.lottie({
     Key? key,
@@ -313,6 +326,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
     AlignmentGeometry alignment = Alignment.center,
     Widget? placeholder,
     Widget Function(BuildContext, Object, StackTrace?)? errorBuilder,
+    VoidCallback? onTap,
     bool repeat = true,
     bool reverse = false,
     bool animate = true,
@@ -335,6 +349,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
          alignment: alignment,
          placeholder: placeholder,
          errorBuilder: errorBuilder,
+         onTap: onTap,
          extraParams: {
            'repeat': repeat,
            'reverse': reverse,
@@ -373,7 +388,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
                 );
           }
 
-          return lottieProvider.buildLottieWidget(
+          final widget = lottieProvider.buildLottieWidget(
             lottieFile: snapshot.data!,
             width: width,
             height: height,
@@ -381,6 +396,9 @@ class CacheNetworkMediaWidget extends StatelessWidget {
             alignment: alignment,
             extraParams: _extraParams,
           );
+          return onTap != null
+              ? GestureDetector(onTap: onTap, child: widget)
+              : widget;
         },
       );
     }
@@ -407,7 +425,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
               );
         }
 
-        return _provider.buildWidget(
+        final widget = _provider.buildWidget(
           data: snapshot.data!,
           width: width,
           height: height,
@@ -415,6 +433,9 @@ class CacheNetworkMediaWidget extends StatelessWidget {
           alignment: alignment,
           extraParams: _extraParams,
         );
+        return onTap != null
+            ? GestureDetector(onTap: onTap, child: widget)
+            : widget;
       },
     );
   }
