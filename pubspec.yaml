@@ -1,6 +1,6 @@
 name: cache_network_media
 description: Cache and display network images, SVGs, and Lottie animations with disk caching and offline support.
-version: 0.0.2
+version: 0.0.3
 homepage: https://github.com/D-extremity/cache_network_media
 repository: https://github.com/D-extremity/cache_network_media
 issue_tracker: https://github.com/D-extremity/cache_network_media/issues
