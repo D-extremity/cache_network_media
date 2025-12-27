@@ -28,7 +28,14 @@ If we can't reproduce it, it doesn't exist. Schrödinger's bug.
 - **Expected:** What should happen in an ideal world
 - **Actual:** What actually happens in this timeline
 
-
+**Environment Details:**
+```
+Flutter version: x.x.x
+Dart version: x.x.x
+Platform: iOS/Android/Web
+Package version: x.x.x
+Device: (if relevant)
+```
 
 **Code Sample:**
 Minimal, reproducible code. Not your entire app. Just the relevant 10-20 lines.
