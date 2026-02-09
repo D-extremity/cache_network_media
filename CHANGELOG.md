@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.0.4 (Unreleased)
+## 1.0.4
 
 ### New Features
 * **True Lazy Loading** - Added `lazyLoading` parameter with viewport-based visibility detection
