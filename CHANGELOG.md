@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.5
+
+### Bug Fixes
+* **Lazy Loading** - Fixed visibility detection issue in lazy loading functionality
+
+---
+
 ## 1.0.4
 
 ### New Features

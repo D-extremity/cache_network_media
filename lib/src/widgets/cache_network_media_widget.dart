@@ -399,9 +399,9 @@ class CacheNetworkMediaWidget extends StatefulWidget {
          },
        );
 }
-
 class _CacheNetworkMediaWidgetState extends State<CacheNetworkMediaWidget> {
   bool _shouldLoad = false;
+  bool _hasBeenVisible = false;
 
   @override
   void initState() {
@@ -410,35 +410,37 @@ class _CacheNetworkMediaWidgetState extends State<CacheNetworkMediaWidget> {
     if (!widget.lazyLoading) {
       _shouldLoad = true;
     }
-    // If lazy loading is enabled, wait for visibility detection
   }
 
   void _onVisibilityChanged(VisibilityInfo info) {
     // Start loading when widget becomes visible (even partially)
-    if (!_shouldLoad && info.visibleFraction > 0) {
-      setState(() {
-        _shouldLoad = true;
-      });
+    if (!_hasBeenVisible && info.visibleFraction > 0) {
+      _hasBeenVisible = true;
+      if (!_shouldLoad) {
+        setState(() {
+          _shouldLoad = true;
+        });
+      }
     }
   }
 
   Widget _buildMediaContent() {
-    // Show placeholder if not yet loaded
-    if (!_shouldLoad) {
-      return widget.placeholder ??
-          SizedBox(
-            width: widget.width,
-            height: widget.height,
-            child: const Center(child: CircularProgressIndicator()),
-          );
-    }
-
     // Lottie uses file-based caching
     if (widget._isLottie) {
       final lottieProvider = widget._provider as LottieMediaProvider;
       return FutureBuilder<File>(
-        future: lottieProvider.fetchLottieFile(),
+        future: _shouldLoad ? lottieProvider.fetchLottieFile() : null,
         builder: (context, snapshot) {
+          // Show placeholder while not loaded or loading
+          if (!_shouldLoad || snapshot.connectionState == ConnectionState.waiting) {
+            return widget.placeholder ??
+                SizedBox(
+                  width: widget.width,
+                  height: widget.height,
+                  child: const Center(child: CircularProgressIndicator()),
+                );
+          }
+
           if (snapshot.hasError) {
             return widget.errorBuilder?.call(
                   context,
@@ -474,8 +476,18 @@ class _CacheNetworkMediaWidgetState extends State<CacheNetworkMediaWidget> {
 
     // Images and SVGs use Uint8List-based caching
     return FutureBuilder<Uint8List>(
-      future: widget._provider.fetchMedia(),
+      future: _shouldLoad ? widget._provider.fetchMedia() : null,
       builder: (context, snapshot) {
+        // Show placeholder while not loaded or loading
+        if (!_shouldLoad || snapshot.connectionState == ConnectionState.waiting) {
+          return widget.placeholder ??
+              SizedBox(
+                width: widget.width,
+                height: widget.height,
+                child: const Center(child: CircularProgressIndicator()),
+              );
+        }
+
         if (snapshot.hasError) {
           return widget.errorBuilder?.call(
                 context,
@@ -514,7 +526,7 @@ class _CacheNetworkMediaWidgetState extends State<CacheNetworkMediaWidget> {
     // If lazy loading is enabled, wrap with VisibilityDetector
     if (widget.lazyLoading) {
       return VisibilityDetector(
-        key: Key('cache_media_${widget.url}'),
+        key: Key('cache_media_${widget.url}_${widget.hashCode}'),
         onVisibilityChanged: _onVisibilityChanged,
         child: _buildMediaContent(),
       );
