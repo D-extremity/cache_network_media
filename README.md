@@ -194,6 +194,79 @@ CacheNetworkMediaWidget.lottie(
 )
 ```
 
+### Lazy Loading for Performance Optimization
+
+Enable **true lazy loading** to defer media loading until the widget is actually visible in the viewport. Uses the `visibility_detector` package internally:
+
+```dart
+// Image with lazy loading
+CacheNetworkMediaWidget.img(
+  url: 'https://example.com/image.png',
+  width: 400,
+  height: 300,
+  lazyLoading: true, // Loads only when visible
+)
+
+// SVG with lazy loading
+CacheNetworkMediaWidget.svg(
+  url: 'https://example.com/icon.svg',
+  width: 100,
+  height: 100,
+  lazyLoading: true,
+)
+
+// Lottie with lazy loading
+CacheNetworkMediaWidget.lottie(
+  url: 'https://example.com/animation.json',
+  width: 200,
+  height: 200,
+  lazyLoading: true,
+  repeat: true,
+)
+```
+
+**How it works:**
+
+```dart
+ListView.builder(
+  itemCount: 100,
+  itemBuilder: (context, index) {
+    return CacheNetworkMediaWidget.img(
+      url: 'https://example.com/image$index.png',
+      width: double.infinity,
+      height: 200,
+      lazyLoading: true, // Only loads when scrolled into view!
+      placeholder: const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  },
+)
+```
+
+**What Lazy Loading Does:**
+- ✅ Waits for widgets to scroll into the viewport before loading
+- ✅ Works with vertical scrolling (ListView)
+- ✅ Works with horizontal scrolling (ListView with scrollDirection: Axis.horizontal)
+- ✅ Works with GridView and other scrollable widgets
+- ✅ Only starts network request when widget becomes visible
+- ✅ Saves bandwidth by not loading off-screen media
+- ✅ Reduces memory usage significantly
+
+**Benefits:**
+- ⚡ Faster initial page load (only loads visible items)
+- 💾 Dramatically reduced memory usage (no off-screen loading)
+- 📶 Lower bandwidth consumption (loads on-demand)
+- 🔋 Better battery life
+- 📱 Smooth scrolling performance
+- 🎯 Perfect for long lists and grids
+
+**Technical Details:**
+- Uses `visibility_detector` package for viewport detection
+- Triggers loading when `visibleFraction > 0` (even partially visible)
+- Automatically handles both horizontal and vertical scrolling
+- Minimal performance overhead
+
 ---
 
 ## API Reference
