@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import '../providers/base_media_provider.dart';
 import '../providers/image_media_provider.dart';
 import '../providers/svg_media_provider.dart';
@@ -33,7 +34,7 @@ import '../providers/lottie_media_provider.dart';
 /// @see [ImageMediaProvider] for image caching implementation
 /// @see [SvgMediaProvider] for SVG caching implementation
 /// @see [LottieMediaProvider] for Lottie caching implementation
-class CacheNetworkMediaWidget extends StatelessWidget {
+class CacheNetworkMediaWidget extends StatefulWidget {
   /// The network URL of the media to load and cache
   final String url;
 
@@ -81,6 +82,28 @@ class CacheNetworkMediaWidget extends StatelessWidget {
   /// If null, the widget will not respond to taps
   final VoidCallback? onTap;
 
+  /// Whether to enable lazy loading for the media
+  ///
+  /// When true, media loading is deferred until the widget is actually visible in the viewport.
+  /// Uses [VisibilityDetector] to detect when the widget becomes visible.
+  ///
+  /// **What it does:**
+  /// - Waits until the widget is visible before starting the network request
+  /// - Works with vertical scrolling (ListView)
+  /// - Works with horizontal scrolling (ListView with axis: Axis.horizontal)
+  /// - Works with GridView and other scrollable widgets
+  /// - Saves bandwidth by not loading off-screen media
+  /// - Reduces memory usage by deferring loads
+  ///
+  /// **Use cases:**
+  /// - Long lists with many images
+  /// - GridViews with media thumbnails
+  /// - Horizontal carousels
+  /// - Any scenario with media that might not be immediately visible
+  ///
+  /// Defaults to false for immediate loading.
+  final bool lazyLoading;
+
   /// Type-specific properties stored as Map
   final Map<String, dynamic> _extraParams;
 
@@ -96,10 +119,15 @@ class CacheNetworkMediaWidget extends StatelessWidget {
     this.placeholder,
     this.errorBuilder,
     this.onTap,
+    this.lazyLoading = false,
     Map<String, dynamic>? extraParams,
   }) : _provider = provider,
        _isLottie = isLottie,
        _extraParams = extraParams ?? const {};
+
+  @override
+  State<CacheNetworkMediaWidget> createState() =>
+      _CacheNetworkMediaWidgetState();
 
   /// Creates a cached network image widget for standard image formats.
   ///
@@ -142,6 +170,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
   /// @param isAntiAlias Whether to paint the image with anti-aliasing
   /// @param filterQuality The quality of image sampling
   /// @param onTap Callback triggered when the image is tapped
+  /// @param lazyLoading Whether to defer loading until the widget is rendered (defaults to false)
   ///
   /// @author @D-extremity
   CacheNetworkMediaWidget.img({
@@ -169,6 +198,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
     bool gaplessPlayback = false,
     bool isAntiAlias = false,
     FilterQuality filterQuality = FilterQuality.medium,
+    bool lazyLoading = false,
   }) : this._(
          key: key,
          url: url,
@@ -180,6 +210,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
          placeholder: placeholder,
          errorBuilder: errorBuilder,
          onTap: onTap,
+         lazyLoading: lazyLoading,
          extraParams: {
            'frameBuilder': frameBuilder,
            'loadingBuilder': loadingBuilder,
@@ -232,6 +263,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
   /// @param allowDrawingOutsideViewBox Whether to allow drawing outside the viewBox
   /// @param matchTextDirection Whether to flip the SVG in RTL text direction
   /// @param onTap Callback triggered when the SVG is tapped
+  /// @param lazyLoading Whether to defer loading until the widget is rendered (defaults to false)
   ///
   /// @author @D-extremity
   CacheNetworkMediaWidget.svg({
@@ -253,6 +285,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
     Clip clipBehavior = Clip.hardEdge,
     bool allowDrawingOutsideViewBox = false,
     bool matchTextDirection = false,
+    bool lazyLoading = false,
   }) : this._(
          key: key,
          url: url,
@@ -264,6 +297,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
          placeholder: placeholder,
          errorBuilder: errorBuilder,
          onTap: onTap,
+         lazyLoading: lazyLoading,
          extraParams: {
            'colorFilter':
                colorFilter ??
@@ -314,6 +348,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
   /// @param addRepaintBoundary Whether to add a repaint boundary for performance
   /// @param renderCache Cache strategy for rendering
   /// @param onTap Callback triggered when the animation is tapped
+  /// @param lazyLoading Whether to defer loading until the widget is rendered (defaults to false)
   ///
   /// @author @D-extremity
   CacheNetworkMediaWidget.lottie({
@@ -335,6 +370,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
     LottieOptions? options,
     bool addRepaintBoundary = true,
     RenderCache? renderCache,
+    bool lazyLoading = false,
   }) : this._(
          key: key,
          url: url,
@@ -350,6 +386,7 @@ class CacheNetworkMediaWidget extends StatelessWidget {
          placeholder: placeholder,
          errorBuilder: errorBuilder,
          onTap: onTap,
+         lazyLoading: lazyLoading,
          extraParams: {
            'repeat': repeat,
            'reverse': reverse,
@@ -361,17 +398,49 @@ class CacheNetworkMediaWidget extends StatelessWidget {
            'renderCache': renderCache,
          },
        );
+}
+
+class _CacheNetworkMediaWidgetState extends State<CacheNetworkMediaWidget> {
+  bool _shouldLoad = false;
 
   @override
-  Widget build(BuildContext context) {
+  void initState() {
+    super.initState();
+    // If lazy loading is disabled, start loading immediately
+    if (!widget.lazyLoading) {
+      _shouldLoad = true;
+    }
+    // If lazy loading is enabled, wait for visibility detection
+  }
+
+  void _onVisibilityChanged(VisibilityInfo info) {
+    // Start loading when widget becomes visible (even partially)
+    if (!_shouldLoad && info.visibleFraction > 0) {
+      setState(() {
+        _shouldLoad = true;
+      });
+    }
+  }
+
+  Widget _buildMediaContent() {
+    // Show placeholder if not yet loaded
+    if (!_shouldLoad) {
+      return widget.placeholder ??
+          SizedBox(
+            width: widget.width,
+            height: widget.height,
+            child: const Center(child: CircularProgressIndicator()),
+          );
+    }
+
     // Lottie uses file-based caching
-    if (_isLottie) {
-      final lottieProvider = _provider as LottieMediaProvider;
+    if (widget._isLottie) {
+      final lottieProvider = widget._provider as LottieMediaProvider;
       return FutureBuilder<File>(
         future: lottieProvider.fetchLottieFile(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return errorBuilder?.call(
+            return widget.errorBuilder?.call(
                   context,
                   snapshot.error!,
                   snapshot.stackTrace,
@@ -380,35 +449,35 @@ class CacheNetworkMediaWidget extends StatelessWidget {
           }
 
           if (!snapshot.hasData) {
-            return placeholder ??
+            return widget.placeholder ??
                 SizedBox(
-                  width: width,
-                  height: height,
+                  width: widget.width,
+                  height: widget.height,
                   child: const Center(child: CircularProgressIndicator()),
                 );
           }
 
-          final widget = lottieProvider.buildLottieWidget(
+          final lottieWidget = lottieProvider.buildLottieWidget(
             lottieFile: snapshot.data!,
-            width: width,
-            height: height,
-            fit: fit,
-            alignment: alignment,
-            extraParams: _extraParams,
+            width: widget.width,
+            height: widget.height,
+            fit: widget.fit,
+            alignment: widget.alignment,
+            extraParams: widget._extraParams,
           );
-          return onTap != null
-              ? GestureDetector(onTap: onTap, child: widget)
-              : widget;
+          return widget.onTap != null
+              ? GestureDetector(onTap: widget.onTap, child: lottieWidget)
+              : lottieWidget;
         },
       );
     }
 
     // Images and SVGs use Uint8List-based caching
     return FutureBuilder<Uint8List>(
-      future: _provider.fetchMedia(),
+      future: widget._provider.fetchMedia(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return errorBuilder?.call(
+          return widget.errorBuilder?.call(
                 context,
                 snapshot.error!,
                 snapshot.stackTrace,
@@ -417,26 +486,41 @@ class CacheNetworkMediaWidget extends StatelessWidget {
         }
 
         if (!snapshot.hasData) {
-          return placeholder ??
+          return widget.placeholder ??
               SizedBox(
-                width: width,
-                height: height,
+                width: widget.width,
+                height: widget.height,
                 child: const Center(child: CircularProgressIndicator()),
               );
         }
 
-        final widget = _provider.buildWidget(
+        final mediaWidget = widget._provider.buildWidget(
           data: snapshot.data!,
-          width: width,
-          height: height,
-          fit: fit,
-          alignment: alignment,
-          extraParams: _extraParams,
+          width: widget.width,
+          height: widget.height,
+          fit: widget.fit,
+          alignment: widget.alignment,
+          extraParams: widget._extraParams,
         );
-        return onTap != null
-            ? GestureDetector(onTap: onTap, child: widget)
-            : widget;
+        return widget.onTap != null
+            ? GestureDetector(onTap: widget.onTap, child: mediaWidget)
+            : mediaWidget;
       },
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // If lazy loading is enabled, wrap with VisibilityDetector
+    if (widget.lazyLoading) {
+      return VisibilityDetector(
+        key: Key('cache_media_${widget.url}'),
+        onVisibilityChanged: _onVisibilityChanged,
+        child: _buildMediaContent(),
+      );
+    }
+
+    // If lazy loading is disabled, render directly
+    return _buildMediaContent();
   }
 }
