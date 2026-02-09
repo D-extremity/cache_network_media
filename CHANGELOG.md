@@ -1,3 +1,27 @@
+# Changelog
+
+## 0.0.4 (Unreleased)
+
+### New Features
+* **True Lazy Loading** - Added `lazyLoading` parameter with viewport-based visibility detection
+  - Uses `visibility_detector` package for accurate viewport tracking
+  - Only loads media when widgets are actually visible on screen
+  - Works with both vertical and horizontal scrolling
+  - Significantly reduces bandwidth and memory usage in long lists/grids
+  - Starts loading when `visibleFraction > 0` (even partially visible)
+
+### Dependencies
+* **visibility_detector: ^0.4.0+2** - Added for true lazy loading support
+
+### Improvements
+* **StatefulWidget Migration** - Converted `CacheNetworkMediaWidget` from StatelessWidget to StatefulWidget
+* **Comprehensive Documentation** - Updated docs to explain true lazy loading benefits and usage
+
+### Breaking Changes
+* None - Lazy loading is opt-in via the `lazyLoading` parameter (defaults to `false`)
+
+---
+
 ## 0.0.3
 
 ### New Features
