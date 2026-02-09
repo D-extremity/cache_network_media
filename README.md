@@ -87,7 +87,7 @@ CacheNetworkMediaWidget.img(
   height: 200,
   fit: BoxFit.cover,
   placeholder: CircularProgressIndicator(),
-  onTap: () => print('Image tapped!'),
+  onTap: () => debugPrint('Image tapped!'),
 )
 ```
 
@@ -99,7 +99,7 @@ CacheNetworkMediaWidget.svg(
   width: 100,
   height: 100,
   color: Colors.blue,
-  onTap: () => print('SVG tapped!'),
+  onTap: () => debugPrint('SVG tapped!'),
 )
 ```
 
@@ -112,7 +112,7 @@ CacheNetworkMediaWidget.lottie(
   height: 300,
   repeat: true,
   animate: true,
-  onTap: () => print('Animation tapped!'),
+  onTap: () => debugPrint('Animation tapped!'),
 )
 ```
 
