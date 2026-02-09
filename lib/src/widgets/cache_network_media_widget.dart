@@ -399,6 +399,7 @@ class CacheNetworkMediaWidget extends StatefulWidget {
          },
        );
 }
+
 class _CacheNetworkMediaWidgetState extends State<CacheNetworkMediaWidget> {
   bool _shouldLoad = false;
   bool _hasBeenVisible = false;
@@ -432,7 +433,8 @@ class _CacheNetworkMediaWidgetState extends State<CacheNetworkMediaWidget> {
         future: _shouldLoad ? lottieProvider.fetchLottieFile() : null,
         builder: (context, snapshot) {
           // Show placeholder while not loaded or loading
-          if (!_shouldLoad || snapshot.connectionState == ConnectionState.waiting) {
+          if (!_shouldLoad ||
+              snapshot.connectionState == ConnectionState.waiting) {
             return widget.placeholder ??
                 SizedBox(
                   width: widget.width,
@@ -479,7 +481,8 @@ class _CacheNetworkMediaWidgetState extends State<CacheNetworkMediaWidget> {
       future: _shouldLoad ? widget._provider.fetchMedia() : null,
       builder: (context, snapshot) {
         // Show placeholder while not loaded or loading
-        if (!_shouldLoad || snapshot.connectionState == ConnectionState.waiting) {
+        if (!_shouldLoad ||
+            snapshot.connectionState == ConnectionState.waiting) {
           return widget.placeholder ??
               SizedBox(
                 width: widget.width,
