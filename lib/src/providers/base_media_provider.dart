@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import '../core/cache_directory.dart';
 import '../core/disk_cache_manager.dart';
-import '../platform/cache_network_media_method_channel.dart';
 
 /// Abstract base class for all media providers.
 ///
@@ -42,11 +42,15 @@ abstract class BaseMediaProvider {
   /// 5. Saves downloaded data to cache
   /// 6. Returns the data
   ///
+  /// Entries older than [DiskCacheManager.maxAge] are downloaded again. If
+  /// that download fails (for example while offline), the expired copy is
+  /// returned instead.
+  ///
   /// @return The media data as [Uint8List]
   /// @throws Exception if network request fails
   Future<Uint8List> fetchMedia() async {
-    _cacheManager ??= await _initCacheManager();
-    Uint8List? cachedData = await _cacheManager?.getImage(url);
+    final cache = await cacheManager();
+    final cachedData = await cache.getImage(url);
     if (cachedData != null) {
       debugPrint('Cache HIT for: $url');
       return cachedData;
@@ -54,8 +58,19 @@ abstract class BaseMediaProvider {
 
     debugPrint('Cache MISS for: $url - Downloading...');
 
-    final data = await downloadFromNetwork();
-    await _cacheManager?.putImage(url, data);
+    final Uint8List data;
+    try {
+      data = await downloadFromNetwork();
+    } catch (_) {
+      // An expired copy is better than an error while offline.
+      final staleData = await cache.getImage(url, allowStale: true);
+      if (staleData != null) {
+        debugPrint('Serving expired cache for: $url');
+        return staleData;
+      }
+      rethrow;
+    }
+    await cache.putImage(url, data);
 
     return data;
   }
@@ -115,23 +130,13 @@ abstract class BaseMediaProvider {
   /// @return Initialized [DiskCacheManager] instance
   /// @throws Exception if unable to get or create cache directory
   Future<DiskCacheManager> _initCacheManager() async {
-    if (cacheDirectory != null && cacheDirectory!.path.isNotEmpty) {
-      debugPrint('Using provided cache directory: ${cacheDirectory!.path}');
-      return DiskCacheManager(cacheDirectory!);
-    }
+    return DiskCacheManager(await resolveCacheDirectory(cacheDirectory));
+  }
 
-    final cacheDirPath = await MethodChannelCacheNetworkMedia()
-        .getTempCacheDir();
-    if (cacheDirPath == null || cacheDirPath.isEmpty) {
-      throw Exception('Unable to get cache directory path.');
-    }
-
-    final directory = Directory('$cacheDirPath/cache_network_media');
-    if (!await directory.exists()) {
-      await directory.create(recursive: true);
-    }
-
-    return DiskCacheManager(directory);
+  /// The disk cache backing this provider, created on first use.
+  @protected
+  Future<DiskCacheManager> cacheManager() async {
+    return _cacheManager ??= await _initCacheManager();
   }
 
   /// Clears the cached file for this media URL.

@@ -151,6 +151,54 @@ Image(
 )
 ```
 
+### Save memory with thumbnails
+
+Decode large images at the size you display them. Values are in physical pixels:
+
+```dart
+CacheNetworkMediaWidget.img(
+  url: 'https://example.com/photo.jpg',
+  width: 100,
+  height: 100,
+  memCacheWidth: (100 * MediaQuery.devicePixelRatioOf(context)).round(),
+)
+```
+
+With `CacheNetworkMediaImageProvider`, wrap it in `ResizeImage` as shown above.
+
+### Cache control
+
+Set these once, before `runApp`. They apply to images, SVGs and Lottie files:
+
+```dart
+void main() {
+  // Download again after 7 days. While offline, the expired copy is still shown.
+  CacheNetworkMedia.maxAge = const Duration(days: 7);
+
+  // Keep the disk cache under 200 MB, deleting least recently used files first.
+  CacheNetworkMedia.maxCacheSizeBytes = 200 * 1024 * 1024;
+
+  runApp(const MyApp());
+}
+```
+
+Both default to `null` (never expire, no size limit).
+
+Manage the cache directly:
+
+```dart
+// Download ahead of time, e.g. before the user goes offline
+await CacheNetworkMedia.prefetch('https://example.com/onboarding.json');
+
+// Remove one file, e.g. after the user changes their avatar
+await CacheNetworkMedia.evict('https://example.com/avatar.png');
+
+// Remove everything, e.g. on logout
+await CacheNetworkMedia.clear();
+```
+
+If you use a custom `cacheDirectory`, pass the same directory to these methods.
+
 ---
 
 ## Advanced Usage
@@ -379,11 +427,14 @@ ListView.builder(
 
 ### Cache Storage
 
-| Media Type | Storage Format | Location |
-|------------|---------------|----------|
-| Images | `.cache_image` binary | `cache_network_media/` |
-| SVG | `.cache_image` binary | `cache_network_media/` |
-| Lottie | `.json` file | `cache_network_media/lottie/` |
+All media types are stored as `.cache` files in a `cache_network_media/` folder inside the platform cache directory:
+
+| Platform | Cache directory |
+|----------|-----------------|
+| iOS | `Library/Caches` (persists between launches, not backed up) |
+| Android | App-specific external cache, or internal cache if external storage is unavailable |
+
+Pass `cacheDirectory` to use a different location.
 
 ---
 

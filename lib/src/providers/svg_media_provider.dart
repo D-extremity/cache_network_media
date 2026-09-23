@@ -40,7 +40,8 @@ class SvgMediaProvider extends BaseMediaProvider {
       width: width,
       height: height,
       fit: fit ?? BoxFit.contain,
-      alignment: alignment as Alignment? ?? Alignment.center,
+      // The widget passes an already resolved Alignment.
+      alignment: (alignment ?? Alignment.center).resolve(null),
       colorFilter: extraParams?['colorFilter'] as ColorFilter?,
       theme: extraParams?['theme'] as SvgTheme?,
       semanticsLabel: extraParams?['semanticsLabel'] as String?,

@@ -3,91 +3,29 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lottie/lottie.dart';
 import 'base_media_provider.dart';
-import '../platform/cache_network_media_method_channel.dart';
 
-/// Provider for Lottie animation files with specialized JSON-based caching.
+/// Provider for Lottie animation files.
 ///
-/// This provider handles downloading, caching, and rendering Lottie animations.
-/// Unlike image providers that cache as binary data, this provider:
-/// - Saves Lottie files as JSON with `.json` extension
-/// - Stores in a dedicated `lottie/` subdirectory
-/// - Uses [Lottie.file] for better performance than memory-based loading
-///
-/// Cache structure:
-/// ```
-/// cache_network_media/
-/// └── lottie/
-///     └── <safe_url_hash>.json
-/// ```
+/// Lottie JSON files share the disk cache used for images and SVGs, so
+/// expiry, size limits and `CacheNetworkMedia` apply to them as well.
+/// The cached file is rendered with [Lottie.file].
 ///
 /// @author @D-extremity
 /// @see [BaseMediaProvider] for base caching functionality
 class LottieMediaProvider extends BaseMediaProvider {
   LottieMediaProvider({required super.url, super.cacheDirectory});
 
-  /// Fetches Lottie file from cache or network.
+  /// Fetches the Lottie file from cache or network.
   ///
-  /// This method implements specialized caching for Lottie animations:
-  /// 1. Checks if the JSON file exists in the lottie cache directory
-  /// 2. If found, returns the cached file immediately
-  /// 3. If not found, downloads from network and saves as `.json`
+  /// Uses the same caching rules as [fetchMedia], then returns the cached
+  /// file so it can be rendered with [Lottie.file].
   ///
-  /// The file is saved with a sanitized URL as the filename to ensure
-  /// filesystem compatibility across platforms.
-  ///
-  /// @return A [File] object pointing to the cached Lottie JSON file
+  /// @return A [File] pointing to the cached Lottie JSON
   /// @throws Exception if unable to download or save the file
   Future<File> fetchLottieFile() async {
-    final cacheDir = await _getLottieCacheDirectory();
-    final safeKey = url.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
-    final cachedFile = File('${cacheDir.path}/$safeKey.json');
-
-    // Check if file exists in cache
-    if (await cachedFile.exists()) {
-      debugPrint('Lottie Cache HIT for: $url');
-      return cachedFile;
-    }
-
-    debugPrint('Lottie Cache MISS for: $url - Downloading...');
-
-    // Download from network
-    final data = await downloadFromNetwork();
-
-    // Save as JSON file
-    await cachedFile.writeAsBytes(data, flush: true);
-
-    debugPrint('Lottie cached to: ${cachedFile.path}');
-    return cachedFile;
-  }
-
-  /// Gets or creates the dedicated Lottie cache directory.
-  ///
-  /// Creates a `lottie/` subdirectory within the cache path to keep
-  /// Lottie JSON files organized separately from other cached media.
-  ///
-  /// @return A [Directory] object for the Lottie cache location
-  /// @throws Exception if unable to get or create the directory
-  Future<Directory> _getLottieCacheDirectory() async {
-    if (cacheDirectory != null && cacheDirectory!.path.isNotEmpty) {
-      final lottieDir = Directory('${cacheDirectory!.path}/lottie');
-      if (!await lottieDir.exists()) {
-        await lottieDir.create(recursive: true);
-      }
-      return lottieDir;
-    }
-
-    final cacheDirPath = await MethodChannelCacheNetworkMedia()
-        .getTempCacheDir();
-    if (cacheDirPath == null || cacheDirPath.isEmpty) {
-      throw Exception('Unable to get cache directory path.');
-    }
-
-    final directory = Directory('$cacheDirPath/cache_network_media/lottie');
-    if (!await directory.exists()) {
-      await directory.create(recursive: true);
-    }
-
-    return directory;
+    await fetchMedia();
+    final cache = await cacheManager();
+    return cache.fileFor(url);
   }
 
   /// Not used for Lottie animations.
@@ -144,7 +82,8 @@ class LottieMediaProvider extends BaseMediaProvider {
       width: width,
       height: height,
       fit: fit ?? BoxFit.contain,
-      alignment: alignment as Alignment? ?? Alignment.center,
+      // The widget passes an already resolved Alignment.
+      alignment: (alignment ?? Alignment.center).resolve(null),
 
       // Lottie-specific properties
       repeat: extraParams?['repeat'] as bool? ?? true,

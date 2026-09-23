@@ -159,8 +159,8 @@ Because platform-specific code is unavoidable:
 **Purpose:** Get native cache directory path
 **Method:** `getTempCacheDir()`
 **Why needed:** Each platform stores temporary files differently
-- Android: Context.getCacheDir()
-- iOS: NSTemporaryDirectory()
+- Android: Context.getExternalCacheDir(), falling back to Context.getCacheDir()
+- iOS: Library/Caches (falls back to NSTemporaryDirectory())
 - Others: System temp directory
 
 ## Widget Architecture
