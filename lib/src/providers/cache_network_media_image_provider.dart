@@ -79,10 +79,14 @@ class CacheNetworkMediaImageProvider
       codec: _loadAsync(key, decode),
       scale: key.scale,
       debugLabel: key.url,
-      informationCollector: () => <DiagnosticsNode>[
-        DiagnosticsProperty<ImageProvider>('Image provider', this),
-        DiagnosticsProperty<CacheNetworkMediaImageProvider>('Image key', key),
-      ],
+      informationCollector:
+          () => <DiagnosticsNode>[
+            DiagnosticsProperty<ImageProvider>('Image provider', this),
+            DiagnosticsProperty<CacheNetworkMediaImageProvider>(
+              'Image key',
+              key,
+            ),
+          ],
     );
   }
 

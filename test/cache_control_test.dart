@@ -55,6 +55,15 @@ void main() {
     });
   });
 
+  test('each URL gets its own stable file name', () {
+    final first = cache.fileFor('https://example.com/a.png');
+
+    expect(cache.fileFor('https://example.com/a.png').path, first.path);
+    expect(cache.fileFor('https://example.com/b.png').path, isNot(first.path));
+    final name = first.uri.pathSegments.last;
+    expect(name, matches(RegExp(r'^[0-9a-f]{40}\.cache$')));
+  });
+
   test('maxCacheSizeBytes deletes least recently used entries', () async {
     final now = DateTime.now();
     const keys = ['a', 'b', 'c'];

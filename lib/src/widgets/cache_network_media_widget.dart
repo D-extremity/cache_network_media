@@ -480,9 +480,7 @@ class _CacheNetworkMediaWidgetState extends State<CacheNetworkMediaWidget> {
   Widget _buildMediaContent() {
     // Resolve AlignmentDirectional here, where the text direction is
     // known, so every media type receives a plain Alignment.
-    final alignment = widget.alignment.resolve(
-      Directionality.maybeOf(context),
-    );
+    final alignment = widget.alignment.resolve(Directionality.maybeOf(context));
 
     // Lottie uses file-based caching
     if (widget._isLottie) {

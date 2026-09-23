@@ -28,8 +28,8 @@ Future<Directory> resolveCacheDirectory(Directory? custom) async {
 }
 
 Future<Directory> _createDefaultDirectory() async {
-  final cacheDirPath = await CacheNetworkMediaPlatform.instance
-      .getTempCacheDir();
+  final cacheDirPath =
+      await CacheNetworkMediaPlatform.instance.getTempCacheDir();
   if (cacheDirPath == null || cacheDirPath.isEmpty) {
     throw Exception('Unable to get cache directory path.');
   }

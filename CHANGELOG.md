@@ -16,6 +16,7 @@
   - Both settings default to `null`, so existing behavior is unchanged
 
 ### Bug Fixes
+* **Wrong image shown** - Cached files were named using a short hash of the URL, so two different URLs could, in rare cases, share a file and show each other's image. Files are now named using a SHA-1 hash of the URL. Existing cached files are downloaded once more after updating.
 * **Android build error** - Apps on recent Flutter versions failed to build on Android with a `checkDebugAarMetadata` error. This is fixed. Your app still runs on the same Android versions as before (Android 5.0 and up).
 * **No reload on rebuild** - The widget loads once per URL. Parent rebuilds no longer read the disk again, decode again or flash the placeholder (including in lazy loading mode)
 * **`AlignmentDirectional`** - No longer crashes SVG and Lottie widgets; it is resolved using the ambient text direction

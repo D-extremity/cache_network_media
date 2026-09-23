@@ -89,9 +89,10 @@ class LottieMediaProvider extends BaseMediaProvider {
       repeat: extraParams?['repeat'] as bool? ?? true,
       reverse: extraParams?['reverse'] as bool? ?? false,
       animate: extraParams?['animate'] as bool? ?? true,
-      frameRate: extraParams?['frameRate'] != null
-          ? FrameRate(extraParams!['frameRate'] as double)
-          : FrameRate.max,
+      frameRate:
+          extraParams?['frameRate'] != null
+              ? FrameRate(extraParams!['frameRate'] as double)
+              : FrameRate.max,
       delegates: extraParams?['delegates'] as LottieDelegates?,
       options: extraParams?['options'] as LottieOptions?,
       addRepaintBoundary: extraParams?['addRepaintBoundary'] as bool? ?? true,

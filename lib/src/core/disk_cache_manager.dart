@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+
+import 'package:crypto/crypto.dart';
 
 /// Stores downloaded media as files in [directory].
 ///
@@ -24,7 +27,7 @@ class DiskCacheManager {
 
   /// The file that holds the entry for [key], whether or not it exists yet.
   File fileFor(String key) {
-    final safeName = key.hashCode.toString();
+    final safeName = sha1.convert(utf8.encode(key)).toString();
     return File('${directory.path}/$safeName$_extension');
   }
 
