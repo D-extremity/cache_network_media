@@ -6,6 +6,7 @@ import 'package:cache_network_media/src/core/disk_cache_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lottie/lottie.dart';
 
 /// A valid 1x1 transparent PNG.
 final _png = base64Decode(
@@ -16,6 +17,10 @@ final _svg = utf8.encode(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1">'
   '<rect width="1" height="1"/></svg>',
 );
+
+/// A minimal valid Lottie animation with no layers.
+const _lottieJson =
+    '{"v":"5.7.4","fr":30,"ip":0,"op":30,"w":10,"h":10,"layers":[]}';
 
 /// Lets real file I/O finish, then delivers the results to the widgets.
 Future<void> _settle(WidgetTester tester) async {
@@ -88,6 +93,25 @@ void main() {
     );
     await _settle(tester);
     expect(find.byType(SvgPicture), findsOneWidget);
+  });
+
+  testWidgets('Lottie renders from the cached bytes', (tester) async {
+    const url = 'https://example.com/animation.json';
+    await tester.runAsync(() => cache.putImage(url, utf8.encode(_lottieJson)));
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: CacheNetworkMediaWidget.lottie(
+          url: url,
+          cacheDirectory: tempDir,
+        ),
+      ),
+    );
+    await _settle(tester);
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(Lottie), findsOneWidget);
   });
 
   testWidgets('SVG resolves AlignmentDirectional', (tester) async {

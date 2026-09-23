@@ -39,7 +39,7 @@ Tired of your app downloading the same images repeatedly? Want seamless offline 
 | GIF | ✅ | Binary | Animated images |
 | BMP | ✅ | Binary | Bitmap images |
 | SVG | ✅ | Binary | Vector icons, logos, illustrations |
-| Lottie JSON | ✅ | JSON File | Animations, micro-interactions |
+| Lottie JSON | ✅ | Binary | Animations, micro-interactions |
 
 ### Feature Matrix
 
@@ -52,7 +52,6 @@ Tired of your app downloading the same images repeatedly? Want seamless offline 
 | Offline Support | ✅ | ⚠️ |
 | Tap Gesture Support | ✅ | ❌ |
 | Unified API | ✅ | ❌ |
-| File-based Lottie Cache | ✅ | ❌ |
 | Platform Channel Support | ✅ | ⚠️ |
 | Privacy Manifest (iOS) | ✅ | ❌ |
 | Swift Package Manager | ✅ | ⚠️ |

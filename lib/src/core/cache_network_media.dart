@@ -44,7 +44,17 @@ abstract final class CacheNetworkMedia {
     await DiskCacheManager(directory).clear();
   }
 
-  /// Removes [url] from the disk cache and from Flutter's `ImageCache`.
+  /// Removes [url] from the disk cache, so the next load downloads it again.
+  ///
+  /// Also removes `CacheNetworkMediaImageProvider(url)` from Flutter's
+  /// `ImageCache`. Flutter stores providers with a custom `scale`, or wrapped
+  /// in `ResizeImage`, as separate entries that cannot be looked up by URL.
+  /// Evict those with the same provider you display:
+  ///
+  /// ```dart
+  /// await CacheNetworkMedia.evict(url);
+  /// await ResizeImage(CacheNetworkMediaImageProvider(url), width: 200).evict();
+  /// ```
   static Future<void> evict(String url, {Directory? cacheDirectory}) async {
     final directory = await resolveCacheDirectory(cacheDirectory);
     await DiskCacheManager(directory).remove(url);

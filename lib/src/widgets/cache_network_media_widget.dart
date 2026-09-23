@@ -41,9 +41,6 @@ class CacheNetworkMediaWidget extends StatefulWidget {
   /// Internal media provider instance handling the specific media type
   final BaseMediaProvider _provider;
 
-  /// Flag indicating if this widget is displaying a Lottie animation
-  final bool _isLottie;
-
   /// The width of the widget
   ///
   /// If null, the widget will use its natural width
@@ -111,7 +108,6 @@ class CacheNetworkMediaWidget extends StatefulWidget {
     super.key,
     required this.url,
     required BaseMediaProvider provider,
-    bool isLottie = false,
     this.width,
     this.height,
     this.fit,
@@ -122,7 +118,6 @@ class CacheNetworkMediaWidget extends StatefulWidget {
     this.lazyLoading = false,
     Map<String, dynamic>? extraParams,
   }) : _provider = provider,
-       _isLottie = isLottie,
        _extraParams = extraParams ?? const {};
 
   @override
@@ -326,8 +321,7 @@ class CacheNetworkMediaWidget extends StatefulWidget {
   /// Creates a cached Lottie animation widget.
   ///
   /// Supports Lottie JSON animations with full animation control.
-  /// Downloaded Lottie files are cached as JSON for better performance and debugging.
-  /// Uses file-based caching for optimal Lottie rendering.
+  /// Downloaded Lottie files are cached on disk like images and SVGs.
   ///
   /// Example:
   /// ```dart
@@ -388,7 +382,6 @@ class CacheNetworkMediaWidget extends StatefulWidget {
            url: url,
            cacheDirectory: cacheDirectory,
          ),
-         isLottie: true,
          width: width,
          height: height,
          fit: fit,
@@ -422,7 +415,6 @@ class _CacheNetworkMediaWidgetState extends State<CacheNetworkMediaWidget> {
   /// Created once per source, so rebuilds reuse the loaded result instead of
   /// reading the disk and decoding again.
   Future<Uint8List>? _mediaFuture;
-  Future<File>? _lottieFuture;
 
   @override
   void initState() {
@@ -450,18 +442,11 @@ class _CacheNetworkMediaWidgetState extends State<CacheNetworkMediaWidget> {
         oldWidget._provider.runtimeType != widget._provider.runtimeType ||
         oldWidget._provider.cacheDirectory?.path !=
             widget._provider.cacheDirectory?.path ||
-        (_mediaFuture == null && _lottieFuture == null);
+        _mediaFuture == null;
   }
 
   void _startLoad() {
-    if (widget._isLottie) {
-      final lottieProvider = widget._provider as LottieMediaProvider;
-      _lottieFuture = lottieProvider.fetchLottieFile();
-      _mediaFuture = null;
-    } else {
-      _mediaFuture = widget._provider.fetchMedia();
-      _lottieFuture = null;
-    }
+    _mediaFuture = widget._provider.fetchMedia();
   }
 
   void _onVisibilityChanged(VisibilityInfo info) {
@@ -482,57 +467,7 @@ class _CacheNetworkMediaWidgetState extends State<CacheNetworkMediaWidget> {
     // known, so every media type receives a plain Alignment.
     final alignment = widget.alignment.resolve(Directionality.maybeOf(context));
 
-    // Lottie uses file-based caching
-    if (widget._isLottie) {
-      final lottieProvider = widget._provider as LottieMediaProvider;
-      return FutureBuilder<File>(
-        future: _lottieFuture,
-        builder: (context, snapshot) {
-          // Show placeholder while not loaded or loading
-          if (!_shouldLoad ||
-              snapshot.connectionState == ConnectionState.waiting) {
-            return widget.placeholder ??
-                SizedBox(
-                  width: widget.width,
-                  height: widget.height,
-                  child: const Center(child: CircularProgressIndicator()),
-                );
-          }
-
-          if (snapshot.hasError) {
-            return widget.errorBuilder?.call(
-                  context,
-                  snapshot.error!,
-                  snapshot.stackTrace,
-                ) ??
-                const Icon(Icons.error_outline, color: Colors.red);
-          }
-
-          if (!snapshot.hasData) {
-            return widget.placeholder ??
-                SizedBox(
-                  width: widget.width,
-                  height: widget.height,
-                  child: const Center(child: CircularProgressIndicator()),
-                );
-          }
-
-          final lottieWidget = lottieProvider.buildLottieWidget(
-            lottieFile: snapshot.data!,
-            width: widget.width,
-            height: widget.height,
-            fit: widget.fit,
-            alignment: alignment,
-            extraParams: widget._extraParams,
-          );
-          return widget.onTap != null
-              ? GestureDetector(onTap: widget.onTap, child: lottieWidget)
-              : lottieWidget;
-        },
-      );
-    }
-
-    // Images and SVGs use Uint8List-based caching
+    // Images, SVGs and Lottie all render from the cached bytes
     return FutureBuilder<Uint8List>(
       future: _mediaFuture,
       builder: (context, snapshot) {
