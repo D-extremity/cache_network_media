@@ -8,8 +8,13 @@ on:
 
 jobs:
   analyze:
-    name: Analyze & Test
+    name: Analyze & Test (Flutter ${{ matrix.flutter }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The oldest Flutter the pubspec allows, and a recent stable.
+        flutter: ['3.29.3', '3.38.5']
 
     steps:
       - name: Checkout repository
@@ -18,7 +23,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.38.5'
+          flutter-version: ${{ matrix.flutter }}
           channel: 'stable'
           cache: true
 
@@ -26,6 +31,8 @@ jobs:
         run: flutter pub get
 
       - name: Check formatting
+        # Formatter output differs slightly between versions; check on one.
+        if: matrix.flutter == '3.38.5'
         run: dart format --set-exit-if-changed .
 
       - name: Analyze code

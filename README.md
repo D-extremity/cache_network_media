@@ -5,7 +5,7 @@
 [![pub package](https://img.shields.io/pub/v/cache_network_media.svg)](https://pub.dev/packages/cache_network_media)
 [![GitHub](https://img.shields.io/github/license/D-extremity/cache_network_media)](https://github.com/D-extremity/cache_network_media/blob/main/LICENSE)
 [![CI](https://github.com/D-extremity/cache_network_media/actions/workflows/ci.yml/badge.svg)](https://github.com/D-extremity/cache_network_media/actions/workflows/ci.yml)
-[![Flutter](https://img.shields.io/badge/Flutter-3.3.0+-blue.svg)](https://flutter.dev)
+[![Flutter](https://img.shields.io/badge/Flutter-3.29+-blue.svg)](https://flutter.dev)
 
 ---
 

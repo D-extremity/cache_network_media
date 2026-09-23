@@ -16,6 +16,7 @@
   - Both settings default to `null`, so existing behavior is unchanged
 
 ### Bug Fixes
+* **Android build error** - Apps on recent Flutter versions failed to build on Android with a `checkDebugAarMetadata` error. This is fixed. Your app still runs on the same Android versions as before (Android 5.0 and up).
 * **No reload on rebuild** - The widget loads once per URL. Parent rebuilds no longer read the disk again, decode again or flash the placeholder (including in lazy loading mode)
 * **`AlignmentDirectional`** - No longer crashes SVG and Lottie widgets; it is resolved using the ambient text direction
 * **Interrupted writes** - Cache files are written to a temporary file and renamed, so a killed app no longer leaves a truncated entry
@@ -30,6 +31,11 @@
 * **iOS cache location** - The cache moved from `tmp/`, which iOS can clear at any time, to `Library/Caches`, which persists between launches. Media cached by 1.0.x is downloaded once more.
 * **Android cache location** - Falls back to the internal cache directory when external storage is unavailable, instead of failing every load.
 * Lottie files cached by 1.0.x in the `lottie/` subfolder are no longer used and are downloaded once more. They live in the temporary directory, which the OS reclaims.
+
+### Compatibility
+* Minimum lowered from Dart 3.9 / Flutter 3.35 to **Dart 3.7 / Flutter 3.29**. The previous `flutter: '>=3.3.0'` constraint was inaccurate; the Dart constraint was the real minimum.
+* `flutter_svg` constraint widened from `^2.2.3` (which alone required Dart 3.8) to `^2.0.11`, so pub picks the newest version your SDK supports.
+* CI now also tests against Flutter 3.29.3, the oldest supported version.
 
 ### Chores
 * Removed committed Gradle build output and added `android/.gradle/` and `android/build/` to `.gitignore`
