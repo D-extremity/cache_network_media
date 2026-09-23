@@ -116,6 +116,41 @@ CacheNetworkMediaWidget.lottie(
 )
 ```
 
+### Use as an `ImageProvider`
+
+`CacheNetworkMediaImageProvider` uses the same disk cache, and works anywhere Flutter accepts an `ImageProvider`:
+
+```dart
+// Avatars
+CircleAvatar(
+  backgroundImage: CacheNetworkMediaImageProvider('https://example.com/avatar.png'),
+)
+
+// Backgrounds
+Container(
+  decoration: BoxDecoration(
+    image: DecorationImage(
+      image: CacheNetworkMediaImageProvider('https://example.com/bg.jpg'),
+      fit: BoxFit.cover,
+    ),
+  ),
+)
+
+// Warm the cache before navigating
+await precacheImage(
+  CacheNetworkMediaImageProvider('https://example.com/hero.png'),
+  context,
+);
+
+// Decode thumbnails at a smaller size to save memory
+Image(
+  image: ResizeImage(
+    CacheNetworkMediaImageProvider('https://example.com/photo.jpg'),
+    width: 200,
+  ),
+)
+```
+
 ---
 
 ## Advanced Usage
@@ -393,6 +428,14 @@ CacheNetworkMediaWidget.img(
   placeholder: CircularProgressIndicator(),
   errorBuilder: (context, error, stackTrace) => Icon(Icons.error),
 )
+```
+
+```dart
+// Before (cached_network_image)
+CircleAvatar(backgroundImage: CachedNetworkImageProvider(url))
+
+// After (cache_network_media)
+CircleAvatar(backgroundImage: CacheNetworkMediaImageProvider(url))
 ```
 
 ---

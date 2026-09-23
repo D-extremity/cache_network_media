@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.0
+
+### New Features
+* **`CacheNetworkMediaImageProvider`** - A standard `ImageProvider` backed by the same disk cache as `CacheNetworkMediaWidget.img`
+  - Works with `Image`, `CircleAvatar`, `DecorationImage`, `Ink.image` and `precacheImage`
+  - Decoded images go through Flutter's `ImageCache`
+  - Compatible with `ResizeImage` for decoding at a smaller size
+  - Failed loads are evicted from the `ImageCache` so they can be retried
+
+---
+
 ## 1.0.5
 
 ### Bug Fixes
