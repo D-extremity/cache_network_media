@@ -65,7 +65,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  cache_network_media: ^0.0.3
+  cache_network_media: ^1.1.0
 ```
 
 Then run:

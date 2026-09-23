@@ -45,7 +45,6 @@ import 'image_media_provider.dart';
 ///   ),
 /// )
 /// ```
-@immutable
 class CacheNetworkMediaImageProvider
     extends ImageProvider<CacheNetworkMediaImageProvider> {
   /// Creates a provider for the image at [url].
@@ -93,19 +92,26 @@ class CacheNetworkMediaImageProvider
   ) async {
     try {
       assert(key == this);
-      final bytes = await ImageMediaProvider(
+      final media = ImageMediaProvider(
         url: key.url,
         cacheDirectory: key.cacheDirectory,
-      ).fetchMedia();
+      );
+      final bytes = await media.fetchMedia();
 
       if (bytes.lengthInBytes == 0) {
+        await media.clearCache();
         throw StateError(
           '${key.url} is empty and cannot be loaded as an image.',
         );
       }
 
       final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
-      return decode(buffer);
+      try {
+        return await decode(buffer);
+      } catch (_) {
+        await media.clearCache();
+        rethrow;
+      }
     } catch (_) {
       // Evict so a later attempt (e.g. after connectivity returns) retries
       // instead of reusing the failed completer from the ImageCache.

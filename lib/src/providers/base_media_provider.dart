@@ -142,10 +142,6 @@ abstract class BaseMediaProvider {
   /// @throws Exception if unable to delete the file
   Future<void> clearCache() async {
     _cacheManager ??= await _initCacheManager();
-    final safeKey = url.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
-    final file = File('${_cacheManager!.directory.path}/$safeKey.cache_image');
-    if (await file.exists()) {
-      await file.delete();
-    }
+    await _cacheManager!.remove(url);
   }
 }

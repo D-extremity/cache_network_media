@@ -23,4 +23,11 @@ class DiskCacheManager {
     final file = _getCacheFile(key);
     await file.writeAsBytes(bytes, flush: true);
   }
+
+  Future<void> remove(String key) async {
+    final file = _getCacheFile(key);
+    if (await file.exists()) {
+      await file.delete();
+    }
+  }
 }

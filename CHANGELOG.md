@@ -9,6 +9,13 @@
   - Compatible with `ResizeImage` for decoding at a smaller size
   - Failed loads are evicted from the `ImageCache` so they can be retried
 
+### Bug Fixes
+* **Cache clearing** - `clearCache()` now deletes the file the cache actually writes
+* **Corrupt cache entries** - Image bytes that cannot be decoded (e.g. an HTML error page served with status 200) are removed from disk instead of failing on every load
+
+### Chores
+* Removed committed Gradle build output and added `android/.gradle/` and `android/build/` to `.gitignore`
+
 ---
 
 ## 1.0.5

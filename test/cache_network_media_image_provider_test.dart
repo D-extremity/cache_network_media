@@ -80,6 +80,23 @@ void main() {
       });
     });
 
+    testWidgets('removes undecodable bytes from disk', (tester) async {
+      const url = 'https://example.com/not-an-image.png';
+      final cache = DiskCacheManager(tempDir);
+      final provider = CacheNetworkMediaImageProvider(
+        url,
+        cacheDirectory: tempDir,
+      );
+
+      await tester.runAsync(() async {
+        await cache.putImage(url, utf8.encode('<html>error</html>'));
+
+        await expectLater(_resolve(provider), throwsA(anything));
+
+        expect(await cache.getImage(url), isNull);
+      });
+    });
+
     testWidgets('reports errors and evicts itself', (tester) async {
       // Not in the disk cache, and the test binding answers every HTTP
       // request with status 400, so the download fails.
