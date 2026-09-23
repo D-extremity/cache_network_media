@@ -29,12 +29,10 @@ class CacheNetworkMediaPlugin : FlutterPlugin, MethodCallHandler {
 
       "getTempCacheDir" -> {
         try{
-          val tempCachePath = context.externalCacheDir?.absolutePath
-          if (tempCachePath != null) {
-            result.success(tempCachePath)
-          } else {
-            result.error("UNAVAILABLE", "External cache directory not available.", null)
-          }
+          // externalCacheDir is null when shared storage is unavailable;
+          // the internal cache directory always exists.
+          val cacheDir = context.externalCacheDir ?: context.cacheDir
+          result.success(cacheDir.absolutePath)
         } catch (e: Exception) {
           result.error("ERROR", "Failed to get external cache directory: ${e.message}", null)
         }

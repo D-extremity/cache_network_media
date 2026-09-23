@@ -37,6 +37,19 @@ class MyApp extends StatelessWidget {
 
               const SizedBox(height: 24),
               const Text(
+                'ImageProvider Example',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const CircleAvatar(
+                radius: 40,
+                backgroundImage: CacheNetworkMediaImageProvider(
+                  'https://picsum.photos/id/64/200',
+                ),
+              ),
+
+              const SizedBox(height: 24),
+              const Text(
                 'SVG Example',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),

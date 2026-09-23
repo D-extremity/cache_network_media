@@ -55,6 +55,8 @@ class ImageMediaProvider extends BaseMediaProvider {
       filterQuality:
           extraParams?['filterQuality'] as FilterQuality? ??
           FilterQuality.medium,
+      cacheWidth: extraParams?['cacheWidth'] as int?,
+      cacheHeight: extraParams?['cacheHeight'] as int?,
     );
   }
 }

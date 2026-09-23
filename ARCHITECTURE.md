@@ -62,29 +62,13 @@ FutureBuilder handles loading/error/success states
 Widget rendered (finally)
 ```
 
-### Optimized Flow (Lottie)
+### Lottie Flow
 
-Because we're not amateurs:
-
-```
-User calls CacheNetworkMediaWidget.lottie()
-    ↓
-Widget creates LottieMediaProvider
-    ↓
-Provider.fetchLottieFile() checks lottie/ subdirectory
-    ↓
-.json file exists? → Return File reference immediately
-    ↓
-File missing? → Download JSON from network
-    ↓
-Save as actual .json file (not binary blob like a barbarian)
-    ↓
-Provider.buildLottieWidget() uses Lottie.file() (faster than Lottie.memory())
-    ↓
-FutureBuilder<File> handles states
-    ↓
-Animation rendered with proper performance
-```
+Lottie uses the same flow as images and SVGs: the JSON is cached as bytes in the
+shared disk cache, and `LottieMediaProvider.buildWidget()` renders it with
+`Lottie.memory()`. Rendering from the loaded bytes means the animation does not
+depend on the cache file still existing after loading (for example, if the
+size limit deletes it).
 
 ## Core Components
 
@@ -123,10 +107,8 @@ Each media type gets its own provider because abstraction is nice but specializa
 
 **LottieMediaProvider**
 - Handles: Lottie JSON animations
-- Returns: `Lottie.file()` widget (note: file, not memory)
-- Special feature: Saves as actual .json files for debugging
-- Cache: Organized in `lottie/` subdirectory
-- Why different? Because `Lottie.file()` is faster than parsing bytes
+- Returns: `Lottie.memory()` widget
+- Cache: Same hashed files as images and SVGs
 
 ### DiskCacheManager
 
@@ -159,8 +141,8 @@ Because platform-specific code is unavoidable:
 **Purpose:** Get native cache directory path
 **Method:** `getTempCacheDir()`
 **Why needed:** Each platform stores temporary files differently
-- Android: Context.getCacheDir()
-- iOS: NSTemporaryDirectory()
+- Android: Context.getExternalCacheDir(), falling back to Context.getCacheDir()
+- iOS: Library/Caches (falls back to NSTemporaryDirectory())
 - Others: System temp directory
 
 ## Widget Architecture
@@ -187,39 +169,29 @@ Calls private constructor CacheNetworkMediaWidget._()
 Creates ImageMediaProvider
     ↓
 Stores config in _extraParams Map
-    ↓
-Sets _isLottie flag appropriately
 ```
 
 **Rendering Logic:**
 ```dart
 build() {
-  if (_isLottie) {
-    return FutureBuilder<File>(...)      // Lottie uses File
-  } else {
-    return FutureBuilder<Uint8List>(...)  // Images/SVG use bytes
-  }
+  return FutureBuilder<Uint8List>(...)  // Images, SVG and Lottie use bytes
 }
 ```
 
 ## Design Decisions
 
-### Why File-Based Caching for Lottie?
+### Why Lottie Renders From Memory
 
-**The Problem:**
-Lottie files are JSON. Storing JSON as binary blob, then converting back to JSON for parsing is inefficient.
+Earlier versions saved Lottie files as `.json` in a `lottie/` subfolder and rendered
+them with `Lottie.file()`. That caused two problems:
 
-**The Solution:**
-Save as `.json` files directly.
+1. The URL was used as the file name, which fails for long URLs.
+2. Rendering depended on the file still existing after loading, so the cache
+   size limit could delete it before `Lottie.file()` read it.
 
-**Benefits:**
-1. `Lottie.file()` is faster than `Lottie.memory()`
-2. Cached files are human-readable (debugging win)
-3. Can manipulate JSON before rendering (future feature)
-4. No wasteful byte-to-string-to-json conversion
-
-**Tradeoff:**
-Slightly more complex code. Worth it.
+`Lottie.file()` reads the file into bytes and parses them the same way
+`Lottie.memory()` does, so rendering from the bytes already loaded costs nothing
+extra and removes the second disk read.
 
 ### Why Provider Pattern?
 
@@ -241,7 +213,7 @@ Slightly more complex code. Worth it.
 
 **Long answer:**
 - Most image caching packages don't handle SVG
-- None properly handle Lottie with file-based caching
+- None cache Lottie animations on disk
 - We wanted unified API for all media types
 - Custom cache management requirements
 - Learning exercise

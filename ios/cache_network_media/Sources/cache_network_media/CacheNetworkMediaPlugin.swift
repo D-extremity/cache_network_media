@@ -16,7 +16,14 @@ public class CacheNetworkMediaPlugin: NSObject, FlutterPlugin {
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "getTempCacheDir":
-            result(NSTemporaryDirectory())
+            // Library/Caches survives app restarts and is not backed up.
+            // The OS only purges it under storage pressure while the app is
+            // not running, unlike tmp/, which can be cleared at any time.
+            let caches = FileManager.default.urls(
+                for: .cachesDirectory,
+                in: .userDomainMask
+            ).first
+            result(caches?.path ?? NSTemporaryDirectory())
         default:
             result(FlutterMethodNotImplemented)
         }

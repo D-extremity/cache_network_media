@@ -5,7 +5,7 @@
 [![pub package](https://img.shields.io/pub/v/cache_network_media.svg)](https://pub.dev/packages/cache_network_media)
 [![GitHub](https://img.shields.io/github/license/D-extremity/cache_network_media)](https://github.com/D-extremity/cache_network_media/blob/main/LICENSE)
 [![CI](https://github.com/D-extremity/cache_network_media/actions/workflows/ci.yml/badge.svg)](https://github.com/D-extremity/cache_network_media/actions/workflows/ci.yml)
-[![Flutter](https://img.shields.io/badge/Flutter-3.3.0+-blue.svg)](https://flutter.dev)
+[![Flutter](https://img.shields.io/badge/Flutter-3.29+-blue.svg)](https://flutter.dev)
 
 ---
 
@@ -39,7 +39,7 @@ Tired of your app downloading the same images repeatedly? Want seamless offline 
 | GIF | ✅ | Binary | Animated images |
 | BMP | ✅ | Binary | Bitmap images |
 | SVG | ✅ | Binary | Vector icons, logos, illustrations |
-| Lottie JSON | ✅ | JSON File | Animations, micro-interactions |
+| Lottie JSON | ✅ | Binary | Animations, micro-interactions |
 
 ### Feature Matrix
 
@@ -52,7 +52,6 @@ Tired of your app downloading the same images repeatedly? Want seamless offline 
 | Offline Support | ✅ | ⚠️ |
 | Tap Gesture Support | ✅ | ❌ |
 | Unified API | ✅ | ❌ |
-| File-based Lottie Cache | ✅ | ❌ |
 | Platform Channel Support | ✅ | ⚠️ |
 | Privacy Manifest (iOS) | ✅ | ❌ |
 | Swift Package Manager | ✅ | ⚠️ |
@@ -65,7 +64,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  cache_network_media: ^0.0.3
+  cache_network_media: ^1.1.0
 ```
 
 Then run:
@@ -115,6 +114,89 @@ CacheNetworkMediaWidget.lottie(
   onTap: () => debugPrint('Animation tapped!'),
 )
 ```
+
+### Use as an `ImageProvider`
+
+`CacheNetworkMediaImageProvider` uses the same disk cache, and works anywhere Flutter accepts an `ImageProvider`:
+
+```dart
+// Avatars
+CircleAvatar(
+  backgroundImage: CacheNetworkMediaImageProvider('https://example.com/avatar.png'),
+)
+
+// Backgrounds
+Container(
+  decoration: BoxDecoration(
+    image: DecorationImage(
+      image: CacheNetworkMediaImageProvider('https://example.com/bg.jpg'),
+      fit: BoxFit.cover,
+    ),
+  ),
+)
+
+// Warm the cache before navigating
+await precacheImage(
+  CacheNetworkMediaImageProvider('https://example.com/hero.png'),
+  context,
+);
+
+// Decode thumbnails at a smaller size to save memory
+Image(
+  image: ResizeImage(
+    CacheNetworkMediaImageProvider('https://example.com/photo.jpg'),
+    width: 200,
+  ),
+)
+```
+
+### Save memory with thumbnails
+
+Decode large images at the size you display them. Values are in physical pixels:
+
+```dart
+CacheNetworkMediaWidget.img(
+  url: 'https://example.com/photo.jpg',
+  width: 100,
+  height: 100,
+  memCacheWidth: (100 * MediaQuery.devicePixelRatioOf(context)).round(),
+)
+```
+
+With `CacheNetworkMediaImageProvider`, wrap it in `ResizeImage` as shown above.
+
+### Cache control
+
+Set these once, before `runApp`. They apply to images, SVGs and Lottie files:
+
+```dart
+void main() {
+  // Download again after 7 days. While offline, the expired copy is still shown.
+  CacheNetworkMedia.maxAge = const Duration(days: 7);
+
+  // Keep the disk cache under 200 MB, deleting least recently used files first.
+  CacheNetworkMedia.maxCacheSizeBytes = 200 * 1024 * 1024;
+
+  runApp(const MyApp());
+}
+```
+
+Both default to `null` (never expire, no size limit).
+
+Manage the cache directly:
+
+```dart
+// Download ahead of time, e.g. before the user goes offline
+await CacheNetworkMedia.prefetch('https://example.com/onboarding.json');
+
+// Remove one file, e.g. after the user changes their avatar
+await CacheNetworkMedia.evict('https://example.com/avatar.png');
+
+// Remove everything, e.g. on logout
+await CacheNetworkMedia.clear();
+```
+
+If you use a custom `cacheDirectory`, pass the same directory to these methods.
 
 ---
 
@@ -344,11 +426,14 @@ ListView.builder(
 
 ### Cache Storage
 
-| Media Type | Storage Format | Location |
-|------------|---------------|----------|
-| Images | `.cache_image` binary | `cache_network_media/` |
-| SVG | `.cache_image` binary | `cache_network_media/` |
-| Lottie | `.json` file | `cache_network_media/lottie/` |
+All media types are stored as `.cache` files in a `cache_network_media/` folder inside the platform cache directory:
+
+| Platform | Cache directory |
+|----------|-----------------|
+| iOS | `Library/Caches` (persists between launches, not backed up) |
+| Android | App-specific external cache, or internal cache if external storage is unavailable |
+
+Pass `cacheDirectory` to use a different location.
 
 ---
 
@@ -393,6 +478,14 @@ CacheNetworkMediaWidget.img(
   placeholder: CircularProgressIndicator(),
   errorBuilder: (context, error, stackTrace) => Icon(Icons.error),
 )
+```
+
+```dart
+// Before (cached_network_image)
+CircleAvatar(backgroundImage: CachedNetworkImageProvider(url))
+
+// After (cache_network_media)
+CircleAvatar(backgroundImage: CacheNetworkMediaImageProvider(url))
 ```
 
 ---

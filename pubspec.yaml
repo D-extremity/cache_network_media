@@ -1,6 +1,6 @@
 name: cache_network_media
 description: Cache and display network images, SVGs, and Lottie animations with disk caching and offline support.
-version: 1.0.5
+version: 1.1.0
 homepage: https://github.com/D-extremity/cache_network_media
 repository: https://github.com/D-extremity/cache_network_media
 issue_tracker: https://github.com/D-extremity/cache_network_media/issues
@@ -12,13 +12,14 @@ topics:
   - lottie
 
 environment:
-  sdk: ^3.9.2
-  flutter: '>=3.3.0'
+  sdk: ^3.7.0
+  flutter: '>=3.29.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  flutter_svg: ^2.2.3
+  crypto: ^3.0.3
+  flutter_svg: ^2.0.11
   lottie: ^3.2.0
   plugin_platform_interface: ^2.0.2
   visibility_detector: ^0.4.0+2
