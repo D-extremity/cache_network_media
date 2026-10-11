@@ -68,10 +68,19 @@ abstract final class CacheNetworkMedia {
   ///
   /// Works for images, SVGs and Lottie files. Does nothing if a fresh copy is
   /// already cached.
-  static Future<void> prefetch(String url, {Directory? cacheDirectory}) async {
+  ///
+  /// Use [headers] and [timeout] for CDNs that need authentication.
+  static Future<void> prefetch(
+    String url, {
+    Directory? cacheDirectory,
+    Map<String, String>? headers,
+    Duration? timeout,
+  }) async {
     await ImageMediaProvider(
       url: url,
       cacheDirectory: cacheDirectory,
+      headers: headers,
+      timeout: timeout,
     ).fetchMedia();
   }
 }

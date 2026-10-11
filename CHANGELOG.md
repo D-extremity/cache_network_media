@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Breaking / Platform Changes
+* **Pure Dart** - The Kotlin and Swift code is removed. The default cache directory now comes from `path_provider`'s `getApplicationCacheDirectory()`. This removes the Gradle and CocoaPods setup and adds macOS, Windows and Linux. Web is not supported (the package uses `dart:io`).
+* On Android the default directory moves from the external cache to the internal app cache, so files cached before this release are downloaded once more.
+
+### New Features
+* **Request headers** - `headers` on `CacheNetworkMediaWidget.img/svg/lottie`, `CacheNetworkMediaImageProvider` and `CacheNetworkMedia.prefetch`, for CDNs that need authentication. The cache is keyed by URL only.
+* **Timeout** - `timeout` (default 30 seconds) fails a download when the server stops responding
+* **Download progress** - `progressBuilder` receives a `DownloadProgress` (`received`, `total`, `fraction`) while a file downloads
+* **One download per URL** - Widgets that load the same URL at the same time share a single download
+* **Shared `HttpClient`** - Downloads reuse one client and its connections instead of creating one per request
+
 ## 1.1.0
 
 ### New Features

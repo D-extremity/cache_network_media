@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import '../core/cache_directory.dart';
@@ -30,7 +32,28 @@ abstract class BaseMediaProvider {
   /// Internal cache manager instance, created lazily on first use
   DiskCacheManager? _cacheManager;
 
-  BaseMediaProvider({required this.url, this.cacheDirectory});
+  /// HTTP headers sent with the download request, e.g. `Authorization` for a
+  /// CDN that requires it. The cache is keyed by URL only, so a cached file is
+  /// served regardless of the headers.
+  final Map<String, String>? headers;
+
+  /// How long the server may take to respond, and to send each next chunk,
+  /// before the download fails with a [TimeoutException].
+  /// Defaults to [defaultTimeout].
+  final Duration? timeout;
+
+  BaseMediaProvider({
+    required this.url,
+    this.cacheDirectory,
+    this.headers,
+    this.timeout,
+  });
+
+  /// Used when [timeout] is not set.
+  static const Duration defaultTimeout = Duration(seconds: 30);
+
+  /// One client for all downloads, so connections are reused.
+  static final HttpClient _httpClient = HttpClient();
 
   /// Fetches media from cache or downloads from network.
   ///
@@ -48,24 +71,53 @@ abstract class BaseMediaProvider {
   ///
   /// @return The media data as [Uint8List]
   /// @throws Exception if network request fails
-  Future<Uint8List> fetchMedia() async {
+  ///
+  /// [onProgress] reports download progress. It is not called when the file
+  /// comes from the cache.
+  Future<Uint8List> fetchMedia({
+    ValueChanged<DownloadProgress>? onProgress,
+  }) async {
     final cache = await cacheManager();
+    // Callers asking for the same entry while it loads share one future, so
+    // 20 list items with the same avatar cause a single read or download.
+    final key = cache.fileFor(url).path;
+    var load = _inFlight[key];
+    if (load == null) {
+      load = _InFlightLoad();
+      _inFlight[key] = load;
+      final started = load;
+      started.future = _load(cache, started.report).whenComplete(() {
+        _inFlight.remove(key);
+      });
+    }
+    if (onProgress != null) {
+      load.listen(onProgress);
+    }
+    return load.future;
+  }
+
+  static final Map<String, _InFlightLoad> _inFlight = {};
+
+  Future<Uint8List> _load(
+    DiskCacheManager cache,
+    ValueChanged<DownloadProgress> onProgress,
+  ) async {
     final cachedData = await cache.getImage(url);
     if (cachedData != null) {
-      debugPrint('Cache HIT for: $url');
+      // debugPrint('Cache HIT for: $url');
       return cachedData;
     }
 
-    debugPrint('Cache MISS for: $url - Downloading...');
+    // debugPrint('Cache MISS for: $url - Downloading...');
 
     final Uint8List data;
     try {
-      data = await downloadFromNetwork();
+      data = await downloadFromNetwork(onProgress: onProgress);
     } catch (_) {
       // An expired copy is better than an error while offline.
       final staleData = await cache.getImage(url, allowStale: true);
       if (staleData != null) {
-        debugPrint('Serving expired cache for: $url');
+        // debugPrint('Serving expired cache for: $url');
         return staleData;
       }
       rethrow;
@@ -77,27 +129,34 @@ abstract class BaseMediaProvider {
 
   /// Downloads media from the network URL.
   ///
-  /// Uses [HttpClient] to perform the download. This method can be overridden
-  /// by subclasses if custom download logic is needed.
+  /// Sends [headers] and fails with a [TimeoutException] when the server stops
+  /// responding for longer than [timeout]. Reports progress through
+  /// [onProgress]. This method can be overridden by subclasses if custom
+  /// download logic is needed.
   ///
   /// @return The downloaded media as [Uint8List]
   /// @throws Exception if HTTP status is not 200 or network error occurs
-  Future<Uint8List> downloadFromNetwork() async {
-    final uri = Uri.parse(url);
-    final httpClient = HttpClient();
+  Future<Uint8List> downloadFromNetwork({
+    ValueChanged<DownloadProgress>? onProgress,
+  }) async {
+    final limit = timeout ?? defaultTimeout;
+    final request = await _httpClient.getUrl(Uri.parse(url)).timeout(limit);
+    headers?.forEach(request.headers.set);
+    final response = await request.close().timeout(limit);
 
-    try {
-      final request = await httpClient.getUrl(uri);
-      final response = await request.close();
-
-      if (response.statusCode != 200) {
-        throw Exception('HTTP ${response.statusCode}: Failed to load $url');
-      }
-
-      return await consolidateHttpClientResponseBytes(response);
-    } finally {
-      httpClient.close();
+    if (response.statusCode != 200) {
+      // Drain so the connection can be reused.
+      await response.drain<void>().timeout(limit, onTimeout: () {});
+      throw Exception('HTTP ${response.statusCode}: Failed to load $url');
     }
+
+    final total = response.contentLength >= 0 ? response.contentLength : null;
+    final builder = BytesBuilder(copy: false);
+    await for (final chunk in response.timeout(limit)) {
+      builder.add(chunk);
+      onProgress?.call(DownloadProgress(builder.length, total));
+    }
+    return builder.takeBytes();
   }
 
   /// Builds the widget for this media type.
@@ -148,5 +207,59 @@ abstract class BaseMediaProvider {
   Future<void> clearCache() async {
     _cacheManager ??= await _initCacheManager();
     await _cacheManager!.remove(url);
+  }
+}
+
+/// Progress of a download, reported while media loads from the network.
+@immutable
+class DownloadProgress {
+  const DownloadProgress(this.received, this.total);
+
+  /// Bytes received so far.
+  final int received;
+
+  /// Total size in bytes, or `null` if the server did not send one.
+  final int? total;
+
+  /// A value from 0.0 to 1.0, or `null` if [total] is unknown. Pass it to
+  /// `CircularProgressIndicator(value: ...)`; `null` shows the indeterminate
+  /// animation.
+  double? get fraction {
+    final total = this.total;
+    if (total == null || total == 0) {
+      return null;
+    }
+    return (received / total).clamp(0.0, 1.0);
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is DownloadProgress &&
+      other.received == received &&
+      other.total == total;
+
+  @override
+  int get hashCode => Object.hash(received, total);
+}
+
+/// A running load that several callers share, and their progress listeners.
+class _InFlightLoad {
+  late final Future<Uint8List> future;
+  final List<ValueChanged<DownloadProgress>> _listeners = [];
+  DownloadProgress? _last;
+
+  void listen(ValueChanged<DownloadProgress> listener) {
+    _listeners.add(listener);
+    final last = _last;
+    if (last != null) {
+      listener(last);
+    }
+  }
+
+  void report(DownloadProgress progress) {
+    _last = progress;
+    for (final listener in List.of(_listeners)) {
+      listener(progress);
+    }
   }
 }

@@ -13,7 +13,12 @@ import 'base_media_provider.dart';
 /// @author @D-extremity
 /// @see [BaseMediaProvider] for caching implementation
 class ImageMediaProvider extends BaseMediaProvider {
-  ImageMediaProvider({required super.url, super.cacheDirectory});
+  ImageMediaProvider({
+    required super.url,
+    super.cacheDirectory,
+    super.headers,
+    super.timeout,
+  });
 
   /// Builds an [Image.memory] widget from cached image data.
   ///

@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import '../platform/cache_network_media_platform_interface.dart';
+import 'package:path_provider/path_provider.dart';
 
 Future<Directory>? _defaultDirectory;
 
@@ -28,13 +28,8 @@ Future<Directory> resolveCacheDirectory(Directory? custom) async {
 }
 
 Future<Directory> _createDefaultDirectory() async {
-  final cacheDirPath =
-      await CacheNetworkMediaPlatform.instance.getTempCacheDir();
-  if (cacheDirPath == null || cacheDirPath.isEmpty) {
-    throw Exception('Unable to get cache directory path.');
-  }
-
-  final directory = Directory('$cacheDirPath/cache_network_media');
+  final base = await getApplicationCacheDirectory();
+  final directory = Directory('${base.path}/cache_network_media');
   if (!await directory.exists()) {
     await directory.create(recursive: true);
   }

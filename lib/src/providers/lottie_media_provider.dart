@@ -13,7 +13,12 @@ import 'base_media_provider.dart';
 /// @author @D-extremity
 /// @see [BaseMediaProvider] for base caching functionality
 class LottieMediaProvider extends BaseMediaProvider {
-  LottieMediaProvider({required super.url, super.cacheDirectory});
+  LottieMediaProvider({
+    required super.url,
+    super.cacheDirectory,
+    super.headers,
+    super.timeout,
+  });
 
   /// Builds a [Lottie.memory] widget from the cached JSON bytes.
   ///

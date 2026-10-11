@@ -25,12 +25,7 @@ cache_network_media/
 │       │
 │       ├── widgets/                       # UI layer
 │       │   └── cache_network_media_widget.dart  # The widget you actually use
-│       │
-│       └── platform/                      # Native code interface
-│           ├── cache_network_media_platform_interface.dart
-│           └── cache_network_media_method_channel.dart
 │
-├── android/                               # Android-specific platform code
 ├── example/                               # Working examples (actually tested, unlike some packages)
 ├── test/                                  # Unit tests (yes, we write tests)
 └── docs/                                  # Documentation (you're reading it)
@@ -116,34 +111,30 @@ The unsung hero doing actual I/O:
 
 **Cache Structure:**
 ```
-<platform_cache_directory>/cache_network_media/
-├── 1234567890.cache              # Image
-├── 0987654321.cache              # SVG
-└── lottie/
-    ├── safe_url_hash_1.json      # Lottie animation
-    └── safe_url_hash_2.json      # Another animation
+<application_cache_directory>/cache_network_media/
+├── 3f786850e387550fdab836ed7e6dc881de23001b.cache   # any media type
+└── 9a0364b9e99bb480dd25e1f0284c8555d3a7c1d4.cache
 ```
 
 **Key Operations:**
 ```dart
+File fileFor(String key)                        // <sha1(key)>.cache
 Future<Uint8List?> getImage(String key)         // Read from cache
-Future<void> putImage(String key, Uint8List)    // Write to cache
+Future<void> putImage(String key, Uint8List)    // Write to a .tmp file, then rename
 ```
 
-**Cache Key Strategy:**
-- Images/SVG: Hash of URL (collision-resistant, filename-safe)
-- Lottie: Sanitized URL (preserves .json extension, human-readable)
+**Cache Key Strategy:** images, SVGs and Lottie files all use the SHA-1 hash of the
+URL as the file name. It is collision-resistant, stable across Dart versions, and a
+fixed 40 characters, however long the URL is.
 
-### Platform Channel
+**In-flight downloads:** `BaseMediaProvider.fetchMedia` keeps a map from cache entry to
+the running future, so concurrent requests for one URL share a single download.
 
-Because platform-specific code is unavoidable:
+### Cache directory
 
-**Purpose:** Get native cache directory path
-**Method:** `getTempCacheDir()`
-**Why needed:** Each platform stores temporary files differently
-- Android: Context.getExternalCacheDir(), falling back to Context.getCacheDir()
-- iOS: Library/Caches (falls back to NSTemporaryDirectory())
-- Others: System temp directory
+There is no native code. The default directory comes from
+`getApplicationCacheDirectory()` (`path_provider`), plus a
+`cache_network_media/` subfolder.
 
 ## Widget Architecture
 

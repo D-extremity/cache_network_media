@@ -101,6 +101,15 @@ class CacheNetworkMediaWidget extends StatefulWidget {
   /// Defaults to false for immediate loading.
   final bool lazyLoading;
 
+  /// Shown instead of [placeholder] while the file downloads, with the
+  /// current [DownloadProgress]. Not used when the file is already cached.
+  ///
+  /// ```dart
+  /// progressBuilder: (context, progress) =>
+  ///     CircularProgressIndicator(value: progress.fraction),
+  /// ```
+  final Widget Function(BuildContext, DownloadProgress)? progressBuilder;
+
   /// Type-specific properties stored as Map
   final Map<String, dynamic> _extraParams;
 
@@ -116,6 +125,7 @@ class CacheNetworkMediaWidget extends StatefulWidget {
     this.errorBuilder,
     this.onTap,
     this.lazyLoading = false,
+    this.progressBuilder,
     Map<String, dynamic>? extraParams,
   }) : _provider = provider,
        _extraParams = extraParams ?? const {};
@@ -203,10 +213,18 @@ class CacheNetworkMediaWidget extends StatefulWidget {
     int? memCacheWidth,
     int? memCacheHeight,
     bool lazyLoading = false,
+    Map<String, String>? headers,
+    Duration? timeout,
+    Widget Function(BuildContext, DownloadProgress)? progressBuilder,
   }) : this._(
          key: key,
          url: url,
-         provider: ImageMediaProvider(url: url, cacheDirectory: cacheDirectory),
+         provider: ImageMediaProvider(
+           url: url,
+           cacheDirectory: cacheDirectory,
+           headers: headers,
+           timeout: timeout,
+         ),
          width: width,
          height: height,
          fit: fit,
@@ -215,6 +233,7 @@ class CacheNetworkMediaWidget extends StatefulWidget {
          errorBuilder: errorBuilder,
          onTap: onTap,
          lazyLoading: lazyLoading,
+         progressBuilder: progressBuilder,
          extraParams: {
            'frameBuilder': frameBuilder,
            'errorBuilder': imageErrorBuilder,
@@ -291,10 +310,18 @@ class CacheNetworkMediaWidget extends StatefulWidget {
     bool allowDrawingOutsideViewBox = false,
     bool matchTextDirection = false,
     bool lazyLoading = false,
+    Map<String, String>? headers,
+    Duration? timeout,
+    Widget Function(BuildContext, DownloadProgress)? progressBuilder,
   }) : this._(
          key: key,
          url: url,
-         provider: SvgMediaProvider(url: url, cacheDirectory: cacheDirectory),
+         provider: SvgMediaProvider(
+           url: url,
+           cacheDirectory: cacheDirectory,
+           headers: headers,
+           timeout: timeout,
+         ),
          width: width,
          height: height,
          fit: fit,
@@ -303,6 +330,7 @@ class CacheNetworkMediaWidget extends StatefulWidget {
          errorBuilder: errorBuilder,
          onTap: onTap,
          lazyLoading: lazyLoading,
+         progressBuilder: progressBuilder,
          extraParams: {
            'colorFilter':
                colorFilter ??
@@ -375,12 +403,17 @@ class CacheNetworkMediaWidget extends StatefulWidget {
     bool addRepaintBoundary = true,
     RenderCache? renderCache,
     bool lazyLoading = false,
+    Map<String, String>? headers,
+    Duration? timeout,
+    Widget Function(BuildContext, DownloadProgress)? progressBuilder,
   }) : this._(
          key: key,
          url: url,
          provider: LottieMediaProvider(
            url: url,
            cacheDirectory: cacheDirectory,
+           headers: headers,
+           timeout: timeout,
          ),
          width: width,
          height: height,
@@ -390,6 +423,7 @@ class CacheNetworkMediaWidget extends StatefulWidget {
          errorBuilder: errorBuilder,
          onTap: onTap,
          lazyLoading: lazyLoading,
+         progressBuilder: progressBuilder,
          extraParams: {
            'repeat': repeat,
            'reverse': reverse,
@@ -415,6 +449,11 @@ class _CacheNetworkMediaWidgetState extends State<CacheNetworkMediaWidget> {
   /// Created once per source, so rebuilds reuse the loaded result instead of
   /// reading the disk and decoding again.
   Future<Uint8List>? _mediaFuture;
+
+  /// Latest download progress; reset when a new load starts.
+  final ValueNotifier<DownloadProgress> _progress = ValueNotifier(
+    const DownloadProgress(0, null),
+  );
 
   @override
   void initState() {
@@ -446,7 +485,42 @@ class _CacheNetworkMediaWidgetState extends State<CacheNetworkMediaWidget> {
   }
 
   void _startLoad() {
-    _mediaFuture = widget._provider.fetchMedia();
+    _progress.value = const DownloadProgress(0, null);
+    _mediaFuture = widget._provider.fetchMedia(
+      onProgress: (progress) {
+        if (mounted) {
+          _progress.value = progress;
+        }
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _progress.dispose();
+    super.dispose();
+  }
+
+  Widget _buildPlaceholder() {
+    final progressBuilder = widget.progressBuilder;
+    if (progressBuilder == null && widget.placeholder != null) {
+      return widget.placeholder!;
+    }
+    return SizedBox(
+      width: widget.width,
+      height: widget.height,
+      child: Center(
+        child:
+            progressBuilder == null
+                ? const CircularProgressIndicator()
+                : ValueListenableBuilder<DownloadProgress>(
+                  valueListenable: _progress,
+                  builder:
+                      (context, progress, _) =>
+                          progressBuilder(context, progress),
+                ),
+      ),
+    );
   }
 
   void _onVisibilityChanged(VisibilityInfo info) {
@@ -474,12 +548,7 @@ class _CacheNetworkMediaWidgetState extends State<CacheNetworkMediaWidget> {
         // Show placeholder while not loaded or loading
         if (!_shouldLoad ||
             snapshot.connectionState == ConnectionState.waiting) {
-          return widget.placeholder ??
-              SizedBox(
-                width: widget.width,
-                height: widget.height,
-                child: const Center(child: CircularProgressIndicator()),
-              );
+          return _buildPlaceholder();
         }
 
         if (snapshot.hasError) {
@@ -492,12 +561,7 @@ class _CacheNetworkMediaWidgetState extends State<CacheNetworkMediaWidget> {
         }
 
         if (!snapshot.hasData) {
-          return widget.placeholder ??
-              SizedBox(
-                width: widget.width,
-                height: widget.height,
-                child: const Center(child: CircularProgressIndicator()),
-              );
+          return _buildPlaceholder();
         }
 
         final mediaWidget = widget._provider.buildWidget(
