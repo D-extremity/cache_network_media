@@ -25,12 +25,7 @@ cache_network_media/
 │       │
 │       ├── widgets/                       # UI layer
 │       │   └── cache_network_media_widget.dart  # The widget you actually use
-│       │
-│       └── platform/                      # Native code interface
-│           ├── cache_network_media_platform_interface.dart
-│           └── cache_network_media_method_channel.dart
 │
-├── android/                               # Android-specific platform code
 ├── example/                               # Working examples (actually tested, unlike some packages)
 ├── test/                                  # Unit tests (yes, we write tests)
 └── docs/                                  # Documentation (you're reading it)
@@ -62,29 +57,13 @@ FutureBuilder handles loading/error/success states
 Widget rendered (finally)
 ```
 
-### Optimized Flow (Lottie)
+### Lottie Flow
 
-Because we're not amateurs:
-
-```
-User calls CacheNetworkMediaWidget.lottie()
-    ↓
-Widget creates LottieMediaProvider
-    ↓
-Provider.fetchLottieFile() checks lottie/ subdirectory
-    ↓
-.json file exists? → Return File reference immediately
-    ↓
-File missing? → Download JSON from network
-    ↓
-Save as actual .json file (not binary blob like a barbarian)
-    ↓
-Provider.buildLottieWidget() uses Lottie.file() (faster than Lottie.memory())
-    ↓
-FutureBuilder<File> handles states
-    ↓
-Animation rendered with proper performance
-```
+Lottie uses the same flow as images and SVGs: the JSON is cached as bytes in the
+shared disk cache, and `LottieMediaProvider.buildWidget()` renders it with
+`Lottie.memory()`. Rendering from the loaded bytes means the animation does not
+depend on the cache file still existing after loading (for example, if the
+size limit deletes it).
 
 ## Core Components
 
@@ -123,10 +102,8 @@ Each media type gets its own provider because abstraction is nice but specializa
 
 **LottieMediaProvider**
 - Handles: Lottie JSON animations
-- Returns: `Lottie.file()` widget (note: file, not memory)
-- Special feature: Saves as actual .json files for debugging
-- Cache: Organized in `lottie/` subdirectory
-- Why different? Because `Lottie.file()` is faster than parsing bytes
+- Returns: `Lottie.memory()` widget
+- Cache: Same hashed files as images and SVGs
 
 ### DiskCacheManager
 
@@ -134,34 +111,30 @@ The unsung hero doing actual I/O:
 
 **Cache Structure:**
 ```
-<platform_cache_directory>/cache_network_media/
-├── 1234567890.cache              # Image
-├── 0987654321.cache              # SVG
-└── lottie/
-    ├── safe_url_hash_1.json      # Lottie animation
-    └── safe_url_hash_2.json      # Another animation
+<application_cache_directory>/cache_network_media/
+├── 3f786850e387550fdab836ed7e6dc881de23001b.cache   # any media type
+└── 9a0364b9e99bb480dd25e1f0284c8555d3a7c1d4.cache
 ```
 
 **Key Operations:**
 ```dart
+File fileFor(String key)                        // <sha1(key)>.cache
 Future<Uint8List?> getImage(String key)         // Read from cache
-Future<void> putImage(String key, Uint8List)    // Write to cache
+Future<void> putImage(String key, Uint8List)    // Write to a .tmp file, then rename
 ```
 
-**Cache Key Strategy:**
-- Images/SVG: Hash of URL (collision-resistant, filename-safe)
-- Lottie: Sanitized URL (preserves .json extension, human-readable)
+**Cache Key Strategy:** images, SVGs and Lottie files all use the SHA-1 hash of the
+URL as the file name. It is collision-resistant, stable across Dart versions, and a
+fixed 40 characters, however long the URL is.
 
-### Platform Channel
+**In-flight downloads:** `BaseMediaProvider.fetchMedia` keeps a map from cache entry to
+the running future, so concurrent requests for one URL share a single download.
 
-Because platform-specific code is unavoidable:
+### Cache directory
 
-**Purpose:** Get native cache directory path
-**Method:** `getTempCacheDir()`
-**Why needed:** Each platform stores temporary files differently
-- Android: Context.getCacheDir()
-- iOS: NSTemporaryDirectory()
-- Others: System temp directory
+There is no native code. The default directory comes from
+`getApplicationCacheDirectory()` (`path_provider`), plus a
+`cache_network_media/` subfolder.
 
 ## Widget Architecture
 
@@ -187,39 +160,29 @@ Calls private constructor CacheNetworkMediaWidget._()
 Creates ImageMediaProvider
     ↓
 Stores config in _extraParams Map
-    ↓
-Sets _isLottie flag appropriately
 ```
 
 **Rendering Logic:**
 ```dart
 build() {
-  if (_isLottie) {
-    return FutureBuilder<File>(...)      // Lottie uses File
-  } else {
-    return FutureBuilder<Uint8List>(...)  // Images/SVG use bytes
-  }
+  return FutureBuilder<Uint8List>(...)  // Images, SVG and Lottie use bytes
 }
 ```
 
 ## Design Decisions
 
-### Why File-Based Caching for Lottie?
+### Why Lottie Renders From Memory
 
-**The Problem:**
-Lottie files are JSON. Storing JSON as binary blob, then converting back to JSON for parsing is inefficient.
+Earlier versions saved Lottie files as `.json` in a `lottie/` subfolder and rendered
+them with `Lottie.file()`. That caused two problems:
 
-**The Solution:**
-Save as `.json` files directly.
+1. The URL was used as the file name, which fails for long URLs.
+2. Rendering depended on the file still existing after loading, so the cache
+   size limit could delete it before `Lottie.file()` read it.
 
-**Benefits:**
-1. `Lottie.file()` is faster than `Lottie.memory()`
-2. Cached files are human-readable (debugging win)
-3. Can manipulate JSON before rendering (future feature)
-4. No wasteful byte-to-string-to-json conversion
-
-**Tradeoff:**
-Slightly more complex code. Worth it.
+`Lottie.file()` reads the file into bytes and parses them the same way
+`Lottie.memory()` does, so rendering from the bytes already loaded costs nothing
+extra and removes the second disk read.
 
 ### Why Provider Pattern?
 
@@ -241,7 +204,7 @@ Slightly more complex code. Worth it.
 
 **Long answer:**
 - Most image caching packages don't handle SVG
-- None properly handle Lottie with file-based caching
+- None cache Lottie animations on disk
 - We wanted unified API for all media types
 - Custom cache management requirements
 - Learning exercise

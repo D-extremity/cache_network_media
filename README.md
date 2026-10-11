@@ -1,84 +1,77 @@
 # Cache Network Media
 
-**The ultimate Flutter plugin for caching network images, SVGs, and Lottie animations with persistent disk storage and offline support.**
+**`cached_network_image`, but for SVG and Lottie too.**
+
+Cache Network Media is a Flutter package that downloads network **images, SVGs and Lottie animations once**, stores them on disk, and shows them instantly (and offline) from then on.
+
+`SvgPicture.network` ([flutter_svg](https://pub.dev/packages/flutter_svg)) and `Lottie.network` ([lottie](https://pub.dev/packages/lottie)) do not keep a disk cache, so the same file is downloaded again on every cold start. This package adds that cache, with one widget for all three media types.
 
 [![pub package](https://img.shields.io/pub/v/cache_network_media.svg)](https://pub.dev/packages/cache_network_media)
 [![GitHub](https://img.shields.io/github/license/D-extremity/cache_network_media)](https://github.com/D-extremity/cache_network_media/blob/main/LICENSE)
 [![CI](https://github.com/D-extremity/cache_network_media/actions/workflows/ci.yml/badge.svg)](https://github.com/D-extremity/cache_network_media/actions/workflows/ci.yml)
-[![Flutter](https://img.shields.io/badge/Flutter-3.3.0+-blue.svg)](https://flutter.dev)
+[![Flutter](https://img.shields.io/badge/Flutter-3.29+-blue.svg)](https://flutter.dev)
 
----
+<p align="center">
+  <img src="doc/demo.gif" alt="An animated bird loaded from the disk cache by Cache Network Media" width="320">
+</p>
 
-## Why Cache Network Media?
+## Contents
 
-Tired of your app downloading the same images repeatedly? Want seamless offline support for your media assets? **Cache Network Media** provides a unified, efficient solution for caching all your network media in Flutter.
+- [Why use it](#why-use-it)
+- [Install](#install)
+- [Quick start](#quick-start)
+- [Migrating from cached_network_image](#migrating-from-cached_network_image)
+- [Common tasks](#common-tasks)
+- [API reference](#api-reference)
+- [How caching works](#how-caching-works)
+- [Platform support](#platform-support)
+- [FAQ](#faq)
+- [Contributing and license](#contributing-and-license)
 
-### ✨ Key Benefits
+## Why use it
 
-| Benefit | Description |
-|---------|-------------|
-| 🚀 **Faster Load Times** | Media loads instantly from local cache after first download |
-| 📴 **Offline Support** | Display cached media even without internet connection |
-| 💾 **Reduced Bandwidth** | Download once, use forever - saves data for your users |
-| 🎯 **Unified API** | One widget for images, SVGs, and Lottie - consistent syntax |
-| 📁 **Custom Cache Directory** | Full control over where your cached files are stored |
-| 🔧 **Zero Configuration** | Works out of the box with sensible defaults |
-| 📱 **Cross-Platform** | Android, iOS with native platform channel support |
+| You get | Details |
+|---|---|
+| **One widget for three formats** | PNG, JPG, WebP, GIF and BMP images, SVG graphics and Lottie JSON animations |
+| **Persistent disk cache** | Files survive app restarts, so media loads without a network request after the first download |
+| **Offline support** | Cached media still shows with no connection. Expired copies are used when a refresh fails |
+| **Real-world requests** | Request `headers` for authenticated CDNs, a `timeout`, and download progress |
+| **One download per URL** | 20 list items showing the same avatar trigger a single download, over one shared HTTP client |
+| **List-friendly** | `lazyLoading` waits until an item scrolls into view. Rebuilds never reload the media |
+| **Cache control** | `maxAge`, `maxCacheSizeBytes`, `prefetch`, `evict` and `clear` |
+| **Pure Dart** | No Kotlin, Swift, Gradle or CocoaPods setup. Works on Android, iOS, macOS, Windows and Linux |
 
----
+### How it compares
 
-## Feature Comparison
+| | `cache_network_media` | `cached_network_image` | `SvgPicture.network` | `Lottie.network` |
+|---|:---:|:---:|:---:|:---:|
+| Images with disk cache | ✅ | ✅ | ❌ | ❌ |
+| SVG with disk cache | ✅ | ❌ | ❌ | ❌ |
+| Lottie with disk cache | ✅ | ❌ | ❌ | ❌ |
+| Works as an `ImageProvider` | ✅ | ✅ | ❌ | ❌ |
 
-### Supported Media Types
+## Install
 
-| Media Type | Supported | Caching Method | Use Case |
-|------------|:---------:|----------------|----------|
-| PNG | ✅ | Binary | Photos, screenshots, graphics |
-| JPG/JPEG | ✅ | Binary | Photos, compressed images |
-| WebP | ✅ | Binary | Modern web images, animations |
-| GIF | ✅ | Binary | Animated images |
-| BMP | ✅ | Binary | Bitmap images |
-| SVG | ✅ | Binary | Vector icons, logos, illustrations |
-| Lottie JSON | ✅ | JSON File | Animations, micro-interactions |
+```bash
+flutter pub add cache_network_media
+```
 
-### Feature Matrix
-
-| Feature | cache_network_media | Others |
-|---------|:-------------------:|:------:|
-| Image Caching | ✅ | ✅ |
-| SVG Support | ✅ | ❌ |
-| Lottie Support | ✅ | ❌ |
-| Custom Cache Directory | ✅ | ❌ |
-| Offline Support | ✅ | ⚠️ |
-| Tap Gesture Support | ✅ | ❌ |
-| Unified API | ✅ | ❌ |
-| File-based Lottie Cache | ✅ | ❌ |
-| Platform Channel Support | ✅ | ⚠️ |
-| Privacy Manifest (iOS) | ✅ | ❌ |
-| Swift Package Manager | ✅ | ⚠️ |
-
----
-
-## Installation
-
-Add to your `pubspec.yaml`:
+Or add it to `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  cache_network_media: ^0.0.3
+  cache_network_media: ^1.1.0
 ```
 
-Then run:
+Then import it:
 
-```bash
-flutter pub get
+```dart
+import 'package:cache_network_media/cache_network_media.dart';
 ```
 
----
+## Quick start
 
-## Quick Start
-
-### Cache Network Images
+### Cached network image
 
 ```dart
 CacheNetworkMediaWidget.img(
@@ -86,12 +79,12 @@ CacheNetworkMediaWidget.img(
   width: 200,
   height: 200,
   fit: BoxFit.cover,
-  placeholder: CircularProgressIndicator(),
-  onTap: () => debugPrint('Image tapped!'),
+  placeholder: const CircularProgressIndicator(),
+  errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
 )
 ```
 
-### Cache SVG Graphics
+### Cached SVG
 
 ```dart
 CacheNetworkMediaWidget.svg(
@@ -99,11 +92,10 @@ CacheNetworkMediaWidget.svg(
   width: 100,
   height: 100,
   color: Colors.blue,
-  onTap: () => debugPrint('SVG tapped!'),
 )
 ```
 
-### Cache Lottie Animations
+### Cached Lottie animation
 
 ```dart
 CacheNetworkMediaWidget.lottie(
@@ -111,345 +103,300 @@ CacheNetworkMediaWidget.lottie(
   width: 300,
   height: 300,
   repeat: true,
-  animate: true,
-  onTap: () => debugPrint('Animation tapped!'),
 )
 ```
 
----
+### As an `ImageProvider`
 
-## Advanced Usage
-
-### Custom Cache Directory
-
-Take full control over where your cached files are stored. This is useful for:
-- **Organizing cached files** by feature or user
-- **Managing cache size** by clearing specific directories
-- **Sharing cache** between different parts of your app
-- **Debugging** by easily locating cached files
+`CacheNetworkMediaImageProvider` uses the same disk cache and works anywhere Flutter accepts an `ImageProvider`:
 
 ```dart
-import 'dart:io';
+CircleAvatar(
+  backgroundImage: CacheNetworkMediaImageProvider('https://example.com/avatar.png'),
+)
+```
 
-// Use a custom directory for caching
-final customDir = Directory('/path/to/your/cache');
+## Migrating from cached_network_image
 
+The widgets map one to one. Here is the most common case:
+
+```dart
+// Before
+CachedNetworkImage(
+  imageUrl: 'https://example.com/image.png',
+  placeholder: (context, url) => const CircularProgressIndicator(),
+  errorWidget: (context, url, error) => const Icon(Icons.error),
+)
+
+// After
 CacheNetworkMediaWidget.img(
   url: 'https://example.com/image.png',
-  cacheDirectory: customDir,
+  placeholder: const CircularProgressIndicator(),
+  errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
 )
 ```
 
-### Error Handling
+```dart
+// Before
+CircleAvatar(backgroundImage: CachedNetworkImageProvider(url))
 
-Handle network failures gracefully:
+// After
+CircleAvatar(backgroundImage: CacheNetworkMediaImageProvider(url))
+```
+
+| cached_network_image | cache_network_media |
+|---|---|
+| `CachedNetworkImage(imageUrl: ...)` | `CacheNetworkMediaWidget.img(url: ...)` |
+| `CachedNetworkImageProvider(url)` | `CacheNetworkMediaImageProvider(url)` |
+| `placeholder: (context, url) => ...` | `placeholder: widget` |
+| `progressIndicatorBuilder` | `progressBuilder: (context, progress) => ...` |
+| `errorWidget: (context, url, error) => ...` | `errorBuilder: (context, error, stackTrace) => ...` |
+| `httpHeaders` | `headers` |
+| `memCacheWidth`, `memCacheHeight` | `memCacheWidth`, `memCacheHeight` |
+| `DefaultCacheManager().emptyCache()` | `CacheNetworkMedia.clear()` |
+| `DefaultCacheManager().removeFile(url)` | `CacheNetworkMedia.evict(url)` |
+| `DefaultCacheManager().downloadFile(url)` | `CacheNetworkMedia.prefetch(url)` |
+
+Things to know when switching:
+
+- Files cached by `cached_network_image` are not reused. Each image downloads once more.
+- Your SVG and Lottie code can switch from `SvgPicture.network(url)` and `Lottie.network(url)` to `CacheNetworkMediaWidget.svg(url: url)` and `CacheNetworkMediaWidget.lottie(url: url)`.
+
+## Common tasks
+
+### Show download progress
 
 ```dart
 CacheNetworkMediaWidget.img(
-  url: 'https://example.com/image.png',
-  placeholder: CircularProgressIndicator(),
-  errorBuilder: (context, error, stackTrace) {
-    return Column(
-      children: [
-        Icon(Icons.error, color: Colors.red),
-        Text('Failed to load image'),
-      ],
-    );
-  },
+  url: 'https://example.com/large-photo.jpg',
+  progressBuilder: (context, progress) =>
+      CircularProgressIndicator(value: progress.fraction),
 )
 ```
 
-### Image with Color Blending
+`progress.received` and `progress.total` are in bytes. `progress.fraction` is `null` when the server sends no size, which shows the indeterminate animation. `progressBuilder` replaces `placeholder` while a download runs. It is not used when the file is already cached.
+
+### Load from a CDN that needs authentication
 
 ```dart
 CacheNetworkMediaWidget.img(
-  url: 'https://example.com/image.png',
-  color: Colors.blue,
-  colorBlendMode: BlendMode.multiply,
-  filterQuality: FilterQuality.high,
+  url: 'https://cdn.example.com/private/avatar.png',
+  headers: {'Authorization': 'Bearer $token'},
+  timeout: const Duration(seconds: 10),
 )
 ```
 
-### SVG with Theme Support
+`timeout` defaults to 30 seconds and fails the download when the server stops responding. The cache is keyed by URL only, so a cached file is served whatever headers you pass.
 
-```dart
-CacheNetworkMediaWidget.svg(
-  url: 'https://example.com/icon.svg',
-  colorFilter: ColorFilter.mode(Colors.red, BlendMode.srcIn),
-  theme: SvgTheme(currentColor: Colors.blue),
-  semanticsLabel: 'App logo',
-)
-```
-
-### Lottie with Animation Control
-
-```dart
-CacheNetworkMediaWidget.lottie(
-  url: 'https://example.com/animation.json',
-  repeat: false,           // Play once
-  reverse: true,           // Play in reverse
-  animate: true,           // Auto-start
-  frameRate: 60.0,         // Custom FPS
-  addRepaintBoundary: true, // Performance optimization
-)
-```
-
-### Lazy Loading for Performance Optimization
-
-Enable **true lazy loading** to defer media loading until the widget is actually visible in the viewport. Uses the `visibility_detector` package internally:
-
-```dart
-// Image with lazy loading
-CacheNetworkMediaWidget.img(
-  url: 'https://example.com/image.png',
-  width: 400,
-  height: 300,
-  lazyLoading: true, // Loads only when visible
-)
-
-// SVG with lazy loading
-CacheNetworkMediaWidget.svg(
-  url: 'https://example.com/icon.svg',
-  width: 100,
-  height: 100,
-  lazyLoading: true,
-)
-
-// Lottie with lazy loading
-CacheNetworkMediaWidget.lottie(
-  url: 'https://example.com/animation.json',
-  width: 200,
-  height: 200,
-  lazyLoading: true,
-  repeat: true,
-)
-```
-
-**How it works:**
+### Lazy-load long lists
 
 ```dart
 ListView.builder(
   itemCount: 100,
-  itemBuilder: (context, index) {
-    return CacheNetworkMediaWidget.img(
-      url: 'https://example.com/image$index.png',
-      width: double.infinity,
-      height: 200,
-      lazyLoading: true, // Only loads when scrolled into view!
-      placeholder: const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-  },
+  itemBuilder: (context, index) => CacheNetworkMediaWidget.img(
+    url: 'https://example.com/image$index.png',
+    height: 200,
+    lazyLoading: true, // starts loading when the item becomes visible
+  ),
 )
 ```
 
-**What Lazy Loading Does:**
-- ✅ Waits for widgets to scroll into the viewport before loading
-- ✅ Works with vertical scrolling (ListView)
-- ✅ Works with horizontal scrolling (ListView with scrollDirection: Axis.horizontal)
-- ✅ Works with GridView and other scrollable widgets
-- ✅ Only starts network request when widget becomes visible
-- ✅ Saves bandwidth by not loading off-screen media
-- ✅ Reduces memory usage significantly
+### Set cache limits
 
-**Benefits:**
-- ⚡ Faster initial page load (only loads visible items)
-- 💾 Dramatically reduced memory usage (no off-screen loading)
-- 📶 Lower bandwidth consumption (loads on-demand)
-- 🔋 Better battery life
-- 📱 Smooth scrolling performance
-- 🎯 Perfect for long lists and grids
+Set these once, before `runApp`. They apply to images, SVGs and Lottie files:
 
-**Technical Details:**
-- Uses `visibility_detector` package for viewport detection
-- Triggers loading when `visibleFraction > 0` (even partially visible)
-- Automatically handles both horizontal and vertical scrolling
-- Minimal performance overhead
+```dart
+void main() {
+  // Download again after 7 days. While offline, the expired copy is still shown.
+  CacheNetworkMedia.maxAge = const Duration(days: 7);
 
----
+  // Keep the disk cache under 200 MB, deleting least recently used files first.
+  CacheNetworkMedia.maxCacheSizeBytes = 200 * 1024 * 1024;
 
-## API Reference
+  runApp(const MyApp());
+}
+```
 
-### Common Parameters (All Media Types)
+Both default to `null`: files never expire and the cache has no size limit.
+
+### Prefetch, evict and clear
+
+```dart
+// Download ahead of time, for example before the user goes offline
+await CacheNetworkMedia.prefetch('https://example.com/onboarding.json');
+
+// Remove one file, for example after the user changes their avatar
+await CacheNetworkMedia.evict('https://example.com/avatar.png');
+
+// Remove everything, for example on logout
+await CacheNetworkMedia.clear();
+```
+
+If you use a custom `cacheDirectory`, pass the same directory to these methods.
+
+### Use a custom cache directory
+
+```dart
+CacheNetworkMediaWidget.img(
+  url: 'https://example.com/image.png',
+  cacheDirectory: Directory('/path/to/your/cache'),
+)
+```
+
+### Save memory with thumbnails
+
+Decode large images at the size you display them. Values are in physical pixels:
+
+```dart
+CacheNetworkMediaWidget.img(
+  url: 'https://example.com/photo.jpg',
+  width: 100,
+  height: 100,
+  memCacheWidth: (100 * MediaQuery.devicePixelRatioOf(context)).round(),
+)
+```
+
+With `CacheNetworkMediaImageProvider`, wrap it in `ResizeImage(provider, width: 200)`.
+
+### Tint SVGs and control Lottie playback
+
+```dart
+CacheNetworkMediaWidget.svg(
+  url: 'https://example.com/icon.svg',
+  colorFilter: const ColorFilter.mode(Colors.red, BlendMode.srcIn),
+  semanticsLabel: 'App logo',
+)
+
+CacheNetworkMediaWidget.lottie(
+  url: 'https://example.com/animation.json',
+  repeat: false,
+  reverse: true,
+  frameRate: 60,
+)
+```
+
+## API reference
+
+Full generated docs: [pub.dev/documentation/cache_network_media](https://pub.dev/documentation/cache_network_media/latest/).
+
+### Parameters for every media type
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
+|---|---|---|
 | `url` | `String` | **Required.** The network URL of the media |
-| `cacheDirectory` | `Directory?` | Custom directory for caching. Uses platform default if null |
-| `width` | `double?` | Width of the widget |
-| `height` | `double?` | Height of the widget |
-| `fit` | `BoxFit?` | How to inscribe the media into the allocated space |
-| `alignment` | `AlignmentGeometry` | How to align the media within its bounds |
-| `placeholder` | `Widget?` | Widget shown while loading |
-| `errorBuilder` | `Function?` | Builder for error widget |
-| `onTap` | `VoidCallback?` | Callback when widget is tapped |
+| `cacheDirectory` | `Directory?` | Custom cache directory. Uses the app cache directory if null |
+| `headers` | `Map<String, String>?` | HTTP headers sent with the download |
+| `timeout` | `Duration?` | How long the server may stay silent before the download fails. Default 30 seconds |
+| `width`, `height` | `double?` | Size of the widget |
+| `fit` | `BoxFit?` | How the media fills its box |
+| `alignment` | `AlignmentGeometry` | Alignment inside the box. `AlignmentDirectional` is supported |
+| `placeholder` | `Widget?` | Shown while loading |
+| `progressBuilder` | `Widget Function(BuildContext, DownloadProgress)?` | Shown while downloading. Replaces `placeholder` |
+| `errorBuilder` | `Widget Function(BuildContext, Object, StackTrace?)?` | Shown when loading fails |
+| `onTap` | `VoidCallback?` | Called when the media is tapped |
+| `lazyLoading` | `bool` | Wait until the widget is visible before loading. Default false |
 
-### Image-Specific Parameters
+### Image parameters (`.img`)
 
 | Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `color` | `Color?` | null | Color to blend with image |
-| `colorBlendMode` | `BlendMode?` | null | Blend mode for color |
-| `filterQuality` | `FilterQuality` | medium | Quality of image sampling |
-| `repeat` | `ImageRepeat` | noRepeat | How to paint uncovered portions |
+|---|---|---|---|
+| `color`, `colorBlendMode` | `Color?`, `BlendMode?` | null | Blend a color into the image |
+| `filterQuality` | `FilterQuality` | medium | Sampling quality |
+| `repeat` | `ImageRepeat` | noRepeat | How to paint uncovered areas |
 | `semanticLabel` | `String?` | null | Accessibility label |
+| `memCacheWidth`, `memCacheHeight` | `int?` | null | Decode at this size, in physical pixels |
+| `gaplessPlayback` | `bool` | false | Keep the old image while a new one loads |
 
-### SVG-Specific Parameters
+### SVG parameters (`.svg`)
 
 | Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `color` | `Color?` | null | Simple color tinting |
+|---|---|---|---|
+| `color` | `Color?` | null | Simple tint |
 | `colorFilter` | `ColorFilter?` | null | Advanced color filtering |
-| `theme` | `SvgTheme?` | null | SVG theme for styling |
-| `clipBehavior` | `Clip` | hardEdge | How to clip content |
+| `theme` | `SvgTheme?` | null | SVG theme |
+| `semanticsLabel` | `String?` | null | Accessibility label |
 
-### Lottie-Specific Parameters
+### Lottie parameters (`.lottie`)
 
 | Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
+|---|---|---|---|
 | `repeat` | `bool` | true | Loop the animation |
 | `reverse` | `bool` | false | Play in reverse |
 | `animate` | `bool` | true | Start immediately |
-| `frameRate` | `double?` | null | Custom FPS |
+| `frameRate` | `double?` | null | Custom frame rate |
 | `delegates` | `LottieDelegates?` | null | Custom delegates |
 
----
+### `CacheNetworkMedia`
 
-## How Caching Works
+| Member | Description |
+|---|---|
+| `maxAge` | How long a file stays fresh. `null` means forever |
+| `maxCacheSizeBytes` | Disk cache size limit. `null` means unlimited |
+| `prefetch(url, {cacheDirectory, headers, timeout})` | Download into the cache without showing |
+| `evict(url, {cacheDirectory})` | Remove one file |
+| `clear({cacheDirectory})` | Remove all cached files |
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Cache Flow Diagram                       │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│   Request URL ──► Check Cache ──► Cache Hit? ──► Yes ──►   │
-│        │                              │          Return     │
-│        │                              │          Cached     │
-│        │                              ▼                     │
-│        │                             No                     │
-│        │                              │                     │
-│        │                              ▼                     │
-│        │                      Download from                 │
-│        │                         Network                    │
-│        │                              │                     │
-│        │                              ▼                     │
-│        │                      Save to Cache                 │
-│        │                              │                     │
-│        │                              ▼                     │
-│        └─────────────────────► Return Media                 │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
+## How caching works
 
-### Cache Storage
+1. The widget asks for a URL.
+2. If a fresh copy is on disk, it is returned immediately.
+3. Otherwise the file is downloaded (once, even if many widgets ask for it at the same time), written to disk, and returned.
+4. If the copy is older than `maxAge` and the new download fails, the old copy is shown.
 
-| Media Type | Storage Format | Location |
-|------------|---------------|----------|
-| Images | `.cache_image` binary | `cache_network_media/` |
-| SVG | `.cache_image` binary | `cache_network_media/` |
-| Lottie | `.json` file | `cache_network_media/lottie/` |
+**Where files are stored.** Files go in a `cache_network_media/` folder inside the directory returned by `getApplicationCacheDirectory()` from [path_provider](https://pub.dev/packages/path_provider), so each platform uses its own app cache location. Each file is named after the SHA-1 hash of its URL with a `.cache` extension, so file names stay short and safe however long the URL is.
 
----
+**Safe writes.** Downloads are written to a temporary file and renamed when complete, so a killed app never leaves a half-written file that looks like a cache hit.
 
-## Platform Support
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the full design.
 
-| Platform | Status | Notes |
-|----------|:------:|-------|
-| Android | ✅ | Full support with method channels |
-| iOS | ✅ | Swift Package Manager + Privacy Manifest |
-| Web | 🚧 | Coming soon |
-| macOS | 🚧 | Coming soon |
-| Windows | 🚧 | Coming soon |
-| Linux | 🚧 | Coming soon |
+## Platform support
 
----
+| Platform | Status |
+|---|:---:|
+| Android | ✅ |
+| iOS | ✅ |
+| macOS | ✅ |
+| Windows | ✅ |
+| Linux | ✅ |
+| Web | ❌ The package uses `dart:io` and would need a separate storage backend |
 
-## Performance Tips
+## FAQ
 
-1. **Use appropriate image sizes** - Don't load 4K images for thumbnails
-2. **Leverage custom cache directories** - Organize cache by feature for easier management
-3. **Set dimensions when known** - Provide `width` and `height` to avoid layout shifts
-4. **Use `addRepaintBoundary`** - Enabled by default for Lottie, improves performance
-5. **Handle errors gracefully** - Always provide an `errorBuilder` for production apps
+**Does it cache Lottie and SVG files across app restarts?**
+Yes. Images, SVGs and Lottie files are stored on disk and reused on the next launch.
 
----
+**Does it work offline?**
+Yes, for anything that was downloaded before. Expired files are still shown when a refresh fails.
 
-## Migration Guide
+**How do I clear the cache on logout?**
+Call `await CacheNetworkMedia.clear()`.
 
-### From cached_network_image
+**Can I use it with authenticated or signed URLs?**
+Yes. Pass `headers` for token-based CDNs. Signed URLs work too, and the file name is a hash, so long query strings are fine. Because the cache is keyed by the full URL, a URL whose signature changes on every request is cached as a new file each time.
 
-```dart
-// Before (cached_network_image)
-CachedNetworkImage(
-  imageUrl: 'https://example.com/image.png',
-  placeholder: (context, url) => CircularProgressIndicator(),
-  errorWidget: (context, url, error) => Icon(Icons.error),
-)
+**Why doesn't `SvgPicture.network` or `Lottie.network` cache to disk?**
+They load the file over the network on every cold start and keep nothing on disk. This package wraps the same renderers (`flutter_svg` and `lottie`) and adds the disk cache.
 
-// After (cache_network_media)
-CacheNetworkMediaWidget.img(
-  url: 'https://example.com/image.png',
-  placeholder: CircularProgressIndicator(),
-  errorBuilder: (context, error, stackTrace) => Icon(Icons.error),
-)
-```
+**Does it support Flutter web?**
+Not yet. See [Platform support](#platform-support).
 
----
+## Contributing and license
 
-## Documentation
+**Found a flaw, a bug or a missing feature? You are welcome to help.** Open an [issue](https://github.com/D-extremity/cache_network_media/issues) to report it, or send a pull request with a fix. Contributions of any size are appreciated, from typo fixes to new features.
 
-- [API Reference](https://pub.dev/documentation/cache_network_media/latest/)
-- [Architecture Details](ARCHITECTURE.md)
-- [Contributing Guidelines](CONTRIBUTING.md)
-- [Changelog](CHANGELOG.md)
-
----
-
-## Contributing
-
-We welcome contributions! Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting a PR.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) first, then:
 
 ```bash
-# Clone the repository
 git clone https://github.com/D-extremity/cache_network_media.git
-
-# Install dependencies
+cd cache_network_media
 flutter pub get
-
-# Run tests
 flutter test
-
-# Check formatting
-dart format --set-exit-if-changed .
-
-# Run analyzer
 flutter analyze
+dart format --set-exit-if-changed .
 ```
 
----
+More documentation: [ARCHITECTURE.md](ARCHITECTURE.md) · [CHANGELOG.md](CHANGELOG.md).
 
-## License
+MIT License. See [LICENSE](LICENSE).
 
-MIT License - see [LICENSE](LICENSE) for details.
-
----
-
-## Author
-
-Created with ❤️ by **[@D-extremity](https://github.com/D-extremity)**
-
----
-
-## Support
-
-If this package helped you, please:
-- ⭐ Star the [GitHub repository](https://github.com/D-extremity/cache_network_media)
-- 👍 Like on [pub.dev](https://pub.dev/packages/cache_network_media)
-- 🐛 Report issues on [GitHub Issues](https://github.com/D-extremity/cache_network_media/issues)
-
----
-
-<p align="center">
-  <b>Cache Network Media</b> - Making network media caching simple since 2025
-</p>
+Created by [@D-extremity](https://github.com/D-extremity). If this package helped you, star the [GitHub repository](https://github.com/D-extremity/cache_network_media), like it on [pub.dev](https://pub.dev/packages/cache_network_media), or [report an issue](https://github.com/D-extremity/cache_network_media/issues).

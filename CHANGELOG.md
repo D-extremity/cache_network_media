@@ -1,5 +1,61 @@
 # Changelog
 
+## Unreleased
+
+### Breaking / Platform Changes
+* **Pure Dart** - The Kotlin and Swift code is removed. The default cache directory now comes from `path_provider`'s `getApplicationCacheDirectory()`. This removes the Gradle and CocoaPods setup and adds macOS, Windows and Linux. Web is not supported (the package uses `dart:io`).
+* On Android the default directory moves from the external cache to the internal app cache, so files cached before this release are downloaded once more.
+
+### New Features
+* **Request headers** - `headers` on `CacheNetworkMediaWidget.img/svg/lottie`, `CacheNetworkMediaImageProvider` and `CacheNetworkMedia.prefetch`, for CDNs that need authentication. The cache is keyed by URL only.
+* **Timeout** - `timeout` (default 30 seconds) fails a download when the server stops responding
+* **Download progress** - `progressBuilder` receives a `DownloadProgress` (`received`, `total`, `fraction`) while a file downloads
+* **One download per URL** - Widgets that load the same URL at the same time share a single download
+* **Shared `HttpClient`** - Downloads reuse one client and its connections instead of creating one per request
+
+## 1.1.0
+
+### New Features
+* **`CacheNetworkMediaImageProvider`** - A standard `ImageProvider` backed by the same disk cache as `CacheNetworkMediaWidget.img`
+  - Works with `Image`, `CircleAvatar`, `DecorationImage`, `Ink.image` and `precacheImage`
+  - Decoded images go through Flutter's `ImageCache`
+  - Compatible with `ResizeImage` for decoding at a smaller size
+  - Failed loads are evicted from the `ImageCache` so they can be retried
+* **Memory-safe decoding** - `memCacheWidth` and `memCacheHeight` on `CacheNetworkMediaWidget.img` decode images at the displayed size
+* **Cache control** - Applies to images, SVGs and Lottie files
+  - `CacheNetworkMedia.maxAge`: expired files are downloaded again; if that fails (e.g. offline), the expired copy is shown
+  - `CacheNetworkMedia.maxCacheSizeBytes`: deletes least recently used files once the limit is exceeded
+  - `CacheNetworkMedia.clear()`, `evict(url)` and `prefetch(url)`
+  - Both settings default to `null`, so existing behavior is unchanged
+
+### Bug Fixes
+* **Wrong image shown** - Cached files were named using a short hash of the URL, so two different URLs could, in rare cases, share a file and show each other's image. Files are now named using a SHA-1 hash of the URL. Existing cached files are downloaded once more after updating.
+* **Android build error** - Apps on recent Flutter versions failed to build on Android with a `checkDebugAarMetadata` error. This is fixed. Your app still runs on the same Android versions as before (Android 5.0 and up).
+* **No reload on rebuild** - The widget loads once per URL. Parent rebuilds no longer read the disk again, decode again or flash the placeholder (including in lazy loading mode)
+* **`AlignmentDirectional`** - No longer crashes SVG and Lottie widgets; it is resolved using the ambient text direction
+* **Interrupted writes** - Cache files are written to a temporary file and renamed, so a killed app no longer leaves a truncated entry
+* **Long Lottie URLs** - Lottie files now share the hashed cache used for images and SVGs instead of using the URL as the filename, which failed for URLs longer than the file system allows
+* **Cache clearing** - `clearCache()` now deletes the file the cache actually writes
+* **Corrupt cache entries** - Image bytes that cannot be decoded (e.g. an HTML error page served with status 200) are removed from disk instead of failing on every load
+
+### Deprecations
+* `loadingBuilder` on `CacheNetworkMediaWidget.img` was never used and is now deprecated. Use `placeholder` instead. It will be removed in 2.0.0.
+
+### Notes
+* **iOS cache location** - The cache moved from `tmp/`, which iOS can clear at any time, to `Library/Caches`, which persists between launches. Media cached by 1.0.x is downloaded once more.
+* **Android cache location** - Falls back to the internal cache directory when external storage is unavailable, instead of failing every load.
+* Lottie files cached by 1.0.x in the `lottie/` subfolder are no longer used and are downloaded once more. They live in the temporary directory, which the OS reclaims.
+
+### Compatibility
+* Minimum lowered from Dart 3.9 / Flutter 3.35 to **Dart 3.7 / Flutter 3.29**. The previous `flutter: '>=3.3.0'` constraint was inaccurate; the Dart constraint was the real minimum.
+* `flutter_svg` constraint widened from `^2.2.3` (which alone required Dart 3.8) to `^2.0.11`, so pub picks the newest version your SDK supports.
+* CI now also tests against Flutter 3.29.3, the oldest supported version.
+
+### Chores
+* Removed committed Gradle build output and added `android/.gradle/` and `android/build/` to `.gitignore`
+
+---
+
 ## 1.0.5
 
 ### Bug Fixes

@@ -3,3 +3,6 @@ library;
 
 // Export main widget (public API)
 export 'src/widgets/cache_network_media_widget.dart';
+export 'src/providers/cache_network_media_image_provider.dart';
+export 'src/core/cache_network_media.dart';
+export 'src/providers/base_media_provider.dart' show DownloadProgress;

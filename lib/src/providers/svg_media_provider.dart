@@ -15,7 +15,12 @@ import 'base_media_provider.dart';
 /// @author @D-extremity
 /// @see [BaseMediaProvider] for caching implementation
 class SvgMediaProvider extends BaseMediaProvider {
-  SvgMediaProvider({required super.url, super.cacheDirectory});
+  SvgMediaProvider({
+    required super.url,
+    super.cacheDirectory,
+    super.headers,
+    super.timeout,
+  });
 
   /// Builds a [SvgPicture.memory] widget from cached SVG data.
   ///
@@ -40,7 +45,8 @@ class SvgMediaProvider extends BaseMediaProvider {
       width: width,
       height: height,
       fit: fit ?? BoxFit.contain,
-      alignment: alignment as Alignment? ?? Alignment.center,
+      // The widget passes an already resolved Alignment.
+      alignment: (alignment ?? Alignment.center).resolve(null),
       colorFilter: extraParams?['colorFilter'] as ColorFilter?,
       theme: extraParams?['theme'] as SvgTheme?,
       semanticsLabel: extraParams?['semanticsLabel'] as String?,
