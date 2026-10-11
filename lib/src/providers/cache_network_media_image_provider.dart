@@ -52,6 +52,8 @@ class CacheNetworkMediaImageProvider
     this.url, {
     this.scale = 1.0,
     this.cacheDirectory,
+    this.headers,
+    this.timeout,
   });
 
   /// The network URL of the image.
@@ -62,6 +64,13 @@ class CacheNetworkMediaImageProvider
 
   /// Optional custom cache directory. If null, uses the platform default.
   final Directory? cacheDirectory;
+
+  /// HTTP headers sent with the download, e.g. `Authorization`.
+  final Map<String, String>? headers;
+
+  /// How long the server may take to respond before the download fails.
+  /// Defaults to 30 seconds.
+  final Duration? timeout;
 
   @override
   Future<CacheNetworkMediaImageProvider> obtainKey(
@@ -99,6 +108,8 @@ class CacheNetworkMediaImageProvider
       final media = ImageMediaProvider(
         url: key.url,
         cacheDirectory: key.cacheDirectory,
+        headers: key.headers,
+        timeout: key.timeout,
       );
       final bytes = await media.fetchMedia();
 
@@ -134,11 +145,23 @@ class CacheNetworkMediaImageProvider
     return other is CacheNetworkMediaImageProvider &&
         other.url == url &&
         other.scale == scale &&
-        other.cacheDirectory?.path == cacheDirectory?.path;
+        other.cacheDirectory?.path == cacheDirectory?.path &&
+        mapEquals(other.headers, headers) &&
+        other.timeout == timeout;
   }
 
   @override
-  int get hashCode => Object.hash(url, scale, cacheDirectory?.path);
+  int get hashCode => Object.hash(
+    url,
+    scale,
+    cacheDirectory?.path,
+    timeout,
+    headers == null
+        ? null
+        : Object.hashAllUnordered(
+          headers!.entries.map((e) => Object.hash(e.key, e.value)),
+        ),
+  );
 
   @override
   String toString() =>

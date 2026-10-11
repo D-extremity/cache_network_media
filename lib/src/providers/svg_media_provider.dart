@@ -15,7 +15,12 @@ import 'base_media_provider.dart';
 /// @author @D-extremity
 /// @see [BaseMediaProvider] for caching implementation
 class SvgMediaProvider extends BaseMediaProvider {
-  SvgMediaProvider({required super.url, super.cacheDirectory});
+  SvgMediaProvider({
+    required super.url,
+    super.cacheDirectory,
+    super.headers,
+    super.timeout,
+  });
 
   /// Builds a [SvgPicture.memory] widget from cached SVG data.
   ///
